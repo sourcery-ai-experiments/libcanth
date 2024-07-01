@@ -10,6 +10,10 @@
  */
 #define force_inline __attribute__((always_inline)) inline
 
+/** @brief Suppress compiler warnings about an unused entity.
+ */
+#define useless __attribute__((unused))
+
 /** @brief Check if a value is a char array.
  */
 #define is_char_array(x) _Generic((typeof(x) *){0}, \
