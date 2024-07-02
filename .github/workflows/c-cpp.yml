@@ -10,21 +10,44 @@ jobs:
   build-ubuntu-24_04:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Describe build host
+    - name: Add apt.llvm.org
+      run: |
+        echo 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble main' | sudo tee /etc/apt/sources.list.d/apt.llvm.org.list
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+
+    - name: Upgrade packages
+      run: |
+        sudo apt-get update
+        sudo apt-get upgrade -y
+
+    - name: Upgrade Clang
+      run: |
+        sudo apt-get install clang-format clang-tidy clang-tools clang libc++-dev libc++abi-dev libclang-dev libomp-dev lld llvm-dev llvm-runtime llvm
+
+    - name: Describe host
       run: |
         uname -a
         gcc --version
         clang --version
 
+    - uses: actions/checkout@v4
+
     - name: Debug build with GCC
-      run: make -j$(nproc) -C src V=1 DEBUG=1
+      run: |
+        mkdir -p build/dbg_gcc
+        make -j$(nproc) -C src O=../build/dbg_gcc DEBUG=1 V=1
 
     - name: Release build with GCC
-      run: make -j$(nproc) -C src V=1
+      run: |
+        mkdir -p build/rel_gcc
+        make -j$(nproc) -C src O=../build/rel_gcc V=1
 
     - name: Debug build with Clang
-      run: make -j$(nproc) -C src V=1 DEBUG=1 CC=clang CXX=clang++ USE_CLANG=1
+      run: |
+        mkdir -p build/dbg_clang
+        make -j$(nproc) -C src O=../build/dbg_clang DEBUG=1 CC=clang CXX=clang++ USE_CLANG=1 V=1
 
     - name: Release build with Clang
-      run: make -j$(nproc) -C src V=1 CC=clang CXX=clang++ USE_CLANG=1
+      run: |
+        mkdir -p build/rel_clang
+        make -j$(nproc) -C src O=../build/rel_clang CC=clang CXX=clang++ USE_CLANG=1 V=1
