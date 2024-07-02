@@ -7,11 +7,24 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  build-ubuntu-24_04:
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
-    - name: make
-      run: make -C src
+    - name: Describe build host
+      run: |
+        uname -a
+        gcc --version
+        clang --version
+
+    - name: Debug build with GCC
+      run: make -j$(nproc) -C src V=1 DEBUG=1
+
+    - name: Release build with GCC
+      run: make -j$(nproc) -C src V=1
+
+    - name: Debug build with Clang
+      run: make -j$(nproc) -C src V=1 DEBUG=1 CC=clang CXX=clang++ USE_CLANG=1
+
+    - name: Release build with Clang
+      run: make -j$(nproc) -C src V=1 CC=clang CXX=clang++ USE_CLANG=1
