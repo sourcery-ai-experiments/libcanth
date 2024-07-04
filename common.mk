@@ -5,6 +5,8 @@ override __libcanth_common_mk_included__ := 1
 include $(lastword $(MAKEFILE_LIST:common.mk=mk/cc.mk))
 
 $(call arg_var,O,$(THIS_DIR))
+$(call arg_var,PKG_CONFIG,pkg-config)
+
 override O := $(O:/=)/
 
 ifneq (1,$(strip $V))
@@ -18,7 +20,7 @@ else
   ifneq (1,$(strip $Q))
     override undefine Q
   endif
-  override nop := @true
+  override nop := @:
 endif
 
 ifeq (,$Q$V)
@@ -43,7 +45,7 @@ ifndef V
   override Q := @
 endif
 
-$(eval yeet:; $$(call msg,YEET,$$(Y__))@true)
+$(eval yeet:; $$(call msg,YEET,$$(Y__))@:)
 .PHONY: yeet
 
 endif

@@ -22,6 +22,33 @@ override define arg_var_
     endif)
 endef
 
+# Read a dependency config variable, fall back to pkg-config.
+override pkg_libs   = $(call pkg_var,$2,$3,--libs,$1)
+override pkg_cflags = $(call pkg_var,$2,$3,--cflags,$1)
+override pkg_var    = \
+  $(call pkg_var_,$(strip $1),$(strip $2),$(strip $3),$(strip $4))
+override define pkg_var_
+  $(eval
+    ifdef $1
+      ifeq (,$$(strip $$($1)))
+        override undefine $1
+      else ifeq (,$$(filter command,$$(firstword $$(origin $1))))
+        override undefine $1
+      else
+        override __$1$1__ := $$($1)
+        override $1 := $$(__$1$1__)
+        override undefine __$1$1__
+      endif
+    endif
+    ifndef $1
+      $(and $3,$4,override $1 = $$(eval \
+        override $1 := $$$$(or $$$$(shell $(PKG_CONFIG) $3 $4),$2))$$($1))
+      ifndef $1
+        $(if $2,override $1 := $2)
+      endif
+    endif)
+endef
+
 override define nl
 
 
@@ -43,7 +70,7 @@ endef
 
 # Generate rules and dependencies.
 override define target_rules
-$(eval override undefine DEP)
+$(eval override undefine OBJ)
 $(foreach t,$1,$(eval $t:| $$O$t)                               \
   $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o))            \
   $(eval override DEP_$t     := $$(OBJ_$t:%.o=%.d))             \
@@ -53,11 +80,11 @@ $(foreach t,$1,$(eval $t:| $$O$t)                               \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                        \
   $(if $(CXX_OBJ_$t),                                           \
     $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)             \
-      +$Q$$(CXX) $$(CXXFLAGS) -o $$@ $$^)                       \
+      +$Q$$(CXX) $$(CXXFLAGS) -o $$@ $$^ $$(LIBS_$t))           \
     $(eval $$(CXX_OBJ_$t):; $$(call msg,COMPILE,$$@)            \
       +$Q$$(CXX) $$(CXXFLAGS) -o $$@ -c -MMD $$<),              \
     $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)             \
-      +$Q$$(CC) $$(CFLAGS) -o $$@ $$^))                         \
+      +$Q$$(CC) $$(CFLAGS) -o $$@ $$^ $$(LIBS_$t)))             \
   $(if $(CC_OBJ_$t),                                            \
     $(eval $$(CC_OBJ_$t):; $$(call msg,COMPILE,$$@)             \
       +$Q$$(CC) $$(CFLAGS) -o $$@ -c -MMD $$<))                 \
@@ -66,9 +93,12 @@ $(foreach t,$1,$(eval $t:| $$O$t)                               \
   $(eval clean-$t: $$(if $$(WHAT_$t),| yeet);$$(if $$(WHAT_$t), \
     $$(call msg,CLEAN,$t)$Q$$(RM) $$(WHAT_$t),$(nop)))          \
   $(eval install-$t:; $$(call msg,INSTALL,$t)$(nop))            \
-  $(eval override DEP += $$(DEP_$t))                            \
+  $(eval override OBJ += $$(OBJ_$t))                            \
 )
-$(eval -include $$(DEP))
+$(eval override OBJ := $$(sort $$(OBJ)) \
+  $(nl)override DEP := $$(OBJ:%.o=%.d)  \
+  $(nl)-include $$(DEP)                 \
+)
 endef
 
 endif

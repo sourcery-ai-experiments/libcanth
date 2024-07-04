@@ -1,3 +1,6 @@
+*.d
+*.o
 /*.creator.user
 /.qtc_clangd
 /.vscode
+/src/test
