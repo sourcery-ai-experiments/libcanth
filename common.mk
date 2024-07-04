@@ -1,5 +1,5 @@
 ifneq (,$(strip $(THIS_DIR)))
-ifeq (,$(strip $(__libcanth_common_mk_included__)))
+ifndef __libcanth_common_mk_included__
 override __libcanth_common_mk_included__ := 1
 
 # Read a command line variable with optional fallback.
