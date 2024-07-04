@@ -18,11 +18,9 @@ ifneq (,$(filter $(PUBLISH),$(or $(MAKECMDGOALS),all)))
 
 include $(THIS_DIR)../common.mk
 
-$(call arg_var,CC,      gcc)
-$(call arg_var,CXX,     g++)
 $(call arg_var,CPU)
-$(call arg_var,ARCH,    native)
-$(call arg_var,TUNE,    native)
+$(call arg_var,ARCH, native)
+$(call arg_var,TUNE, native)
 $(call arg_var,CFLAGS,  -O3 -march=$(ARCH) \
   -mtune=$(TUNE)$(if $(CPU), -mcpu=$(CPU)))
 $(call arg_var,CXXFLAGS,-O3 -march=$(ARCH) \
