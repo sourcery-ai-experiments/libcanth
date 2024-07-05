@@ -24,6 +24,10 @@ jobs:
       run: |
         sudo apt-get install clang-format clang-tidy clang-tools clang libc++-dev libc++abi-dev libclang-dev libomp-dev lld llvm-dev llvm-runtime llvm
 
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libcjson-dev
+
     - name: Describe host
       run: |
         uname -a
@@ -35,19 +39,19 @@ jobs:
     - name: Debug build with GCC
       run: |
         mkdir -p build/dbg_gcc
-        make -j$(nproc) -C src O=../build/dbg_gcc DEBUG=1 V=1
+        make -j$(nproc) -C src O=../build/dbg_gcc DEBUG=1 CC=gcc-14 CXX=g++-14 V=1
 
     - name: Release build with GCC
       run: |
         mkdir -p build/rel_gcc
-        make -j$(nproc) -C src O=../build/rel_gcc V=1
+        make -j$(nproc) -C src O=../build/rel_gcc CC=gcc-14 CXX=g++-14 V=1
 
     - name: Debug build with Clang
       run: |
         mkdir -p build/dbg_clang
-        make -j$(nproc) -C src O=../build/dbg_clang DEBUG=1 CC=clang CXX=clang++ USE_CLANG=1 V=1
+        make -j$(nproc) -C src O=../build/dbg_clang DEBUG=1 CC=clang CXX=clang++ V=1
 
     - name: Release build with Clang
       run: |
         mkdir -p build/rel_clang
-        make -j$(nproc) -C src O=../build/rel_clang CC=clang CXX=clang++ USE_CLANG=1 V=1
+        make -j$(nproc) -C src O=../build/rel_clang CC=clang CXX=clang++ V=1
