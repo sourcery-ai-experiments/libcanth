@@ -18,9 +18,6 @@ ifneq (,$(filter $(PUBLISH),$(or $(MAKECMDGOALS),all)))
 
 include $(THIS_DIR)../common.mk
 
-override CFLAGS   := -std=gnu2x -Wall -Wextra -pedantic $(CFLAGS)
-override CXXFLAGS := -std=gnu++23 -Wall -Wextra -pedantic $(CXXFLAGS)
-
 override SRC_test := $(if $(DEBUG),dbg.c )dstr.c test.c
 override LIBS_test = $(CJSON_LIBS)
 
