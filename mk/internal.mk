@@ -1,25 +1,46 @@
 ifndef __libcanth_internal_mk_included__
 override __libcanth_internal_mk_included__ := 1
 
+override define nl:=
+
+
+endef
+override prefix-if = $(if $2,$1$2)
+override suffix-if = $(if $1,$1$2)
+
 # Read a command line variable with optional fallback.
-override arg_var = $(call arg_var_,$(strip $1),$(strip $(value 2)))
+override arg_var = $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
 override define arg_var_
   $(eval
-    ifdef $1
-      ifeq (,$$(strip $$($1)))
+
+    ifeq (,$$(filter file override undefined,$$(firstword $$(origin __default_$1))))
+      # Unset the __default variable if it was set outside the makefile.
+      override undefine __default_$1
+    endif
+
+    ifeq (environment,$$(firstword $$(origin $1)))
+      # Unset the target variable if it originates from the environment.
+      override undefine $1
+    else ifeq (default,$$(origin $1))
+      # The target variable is a make builtin default.
+      ifdef 2
+        # Explicit fallback takes precedence over a builtin default value.
         override undefine $1
-      else ifeq (,$$(filter command$(if $(value 2),, default), \
-                            $$(firstword $$(origin $1))))
+      else ifneq (undefined,$$(origin __default_$1))
+        # The __default variable takes precedence over the builtin default.
         override undefine $1
-      else
-        override __$1$1__ := $$($1)
-        override $1 := $$(__$1$1__)
-        override undefine __$1$1__
       endif
     endif
-    ifndef $1
-      $(if $(value 2),override $1 := $(value 2))
-    endif)
+
+    ifeq (undefined,$$(origin $1))
+      # The target variable is undefined, i.e. we can modify it.
+      ifdef 2
+        override $1 = $$(eval override $1 := $(value 2))$$($1)
+      else ifneq (undefined,$$(origin __default_$1))
+        override $1 = $$(eval override $1 := $$(value __default_$1))$$($1)
+      endif
+    endif
+  )
 endef
 
 # Read a dependency config variable, fall back to pkg-config.
@@ -49,11 +70,6 @@ override define pkg_var_
     endif)
 endef
 
-override define nl
-
-
-endef
-
 override define get-defs
 $(eval $(subst #,$(nl),$(shell \
   for m in $2; do \
@@ -80,14 +96,14 @@ $(foreach t,$1,$(eval $t:| $$O$t)                                       \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                                \
   $(if $(CXX_OBJ_$t),                                                   \
     $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)                     \
-      +$Q$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -o $$@ $$^ $$(LIBS_$t))      \
+      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t))             \
     $(eval $$(CXX_OBJ_$t):; $$(call msg,COMPILE,$$@)                    \
-      +$Q$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -o $$@ -c -MMD $$<),         \
+      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ -c -MMD $$<),                \
     $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)                     \
-      +$Q$$(CC) $$(CFLAGS) $$(CPPFLAGS) -o $$@ $$^ $$(LIBS_$t)))        \
+      +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)))               \
   $(if $(CC_OBJ_$t),                                                    \
     $(eval $$(CC_OBJ_$t):; $$(call msg,COMPILE,$$@)                     \
-      +$Q$$(CC) $$(CFLAGS) $$(CPPFLAGS) -o $$@ -c -MMD $$<))            \
+      +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ -c -MMD $$<))                   \
   $(eval clean-$t: $$(eval override WHAT_$t :=                          \
     $$$$(wildcard $$O$t $$(OBJ_$t) $$(DEP_$t))))                        \
   $(eval clean-$t: $$(if $$(WHAT_$t),| yeet);$$(if $$(WHAT_$t),         \
