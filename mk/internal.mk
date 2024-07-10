@@ -123,6 +123,9 @@ endef
 
 # Generate rules and dependencies.
 override define target_rules
+$(eval override .O = $$(eval override .O := $$$$(shell \
+  realpath --relative-to='$$(THIS_DIR)' '$$O'))$$(eval \
+  override .O := $$$$(if $$$$(.O:.=),$$$$(.O)/))$$(.O))
 $(eval override undefine OBJ)
 $(foreach t,$1,$(eval $t:| $$O$t)                                       \
   $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o))                    \
@@ -132,20 +135,20 @@ $(foreach t,$1,$(eval $t:| $$O$t)                                       \
   $(eval $$(foreach s,$$(SRC_$t),                                       \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                                \
   $(if $(CXX_OBJ_$t),                                                   \
-    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)                     \
+    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$(.O)$t)                \
       +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t))             \
-    $(eval $$(CXX_OBJ_$t):; $$(call msg,COMPILE,$$@)                    \
+    $(eval $$(CXX_OBJ_$t):; $$(call msg,COMPILE,$$(@:$$O%=$$(.O)%))     \
       +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ -c -MMD $$<),                \
-    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$@)                     \
+    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$(.O)$t)                \
       +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)))               \
   $(if $(CC_OBJ_$t),                                                    \
-    $(eval $$(CC_OBJ_$t):; $$(call msg,COMPILE,$$@)                     \
+    $(eval $$(CC_OBJ_$t):; $$(call msg,COMPILE,$$(@:$$O%=$$(.O)%))      \
       +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ -c -MMD $$<))                   \
   $(eval clean-$t: $$(eval override WHAT_$t :=                          \
     $$$$(wildcard $$O$t $$(OBJ_$t) $$(DEP_$t))))                        \
   $(eval clean-$t: $$(if $$(WHAT_$t),| yeet);$$(if $$(WHAT_$t),         \
-    $$(call msg,CLEAN,$t)$Q$$(RM) $$(WHAT_$t),$(nop)))                  \
-  $(eval install-$t:; $$(call msg,INSTALL,$t)$(nop))                    \
+    $$(call msg,CLEAN,$$(.O)$t)$Q$$(RM) $$(WHAT_$t),$(nop)))            \
+  $(eval install-$t:; $$(call msg,INSTALL,$$(.O)$t)$(nop))              \
   $(eval override OBJ += $$(OBJ_$t))                                    \
 )
 $(eval override OBJ := $$(sort $$(OBJ)) \
