@@ -3,17 +3,29 @@ override __libcanth_cc_mk_included__ := 1
 
 include $(lastword $(MAKEFILE_LIST:cc.mk=internal.mk))
 
-$(call arg_var,CC, gcc)
-$(call arg_var,CXX,g++)
+$(call arg_var,CC,  gcc)
+$(call arg_var,CXX, g++)
 
-$(call import-macros, \
-  cc-id-macros,       \
-  __GNUC__            \
-  __GNUC_MINOR__      \
-  __GNUC_PATCHLEVEL__ \
-  __clang_major__     \
-  __clang_minor__     \
-  __clang_patchlevel__)
+$(call import-macros,                   \
+  cc-id-macros,                         \
+  __GNUC__                              \
+  __GNUC_MINOR__                        \
+  __GNUC_PATCHLEVEL__                   \
+  __clang_major__                       \
+  __clang_minor__                       \
+  __clang_patchlevel__,                 \
+  __default_CSTD,                       \
+  $(.ifdef) __clang_major__             \
+    $(.if) __clang_major__ > 17         \
+      $.override __default_CSTD:=gnu23  \
+    $(.elif) __clang_major__ > 8        \
+      $.override __default_CSTD:=gnu2x  \
+    $(.endif)                           \
+  $(.elif) __GNUC__ > 13                \
+    $.override __default_CSTD:=gnu23    \
+  $(.elif) __GNUC__ > 8                 \
+    $.override __default_CSTD:=gnu2x    \
+  $(.endif))
 
 __clang__ = $(eval override $(if $(__clang_major__),__clang__:=1,undefine __clang__))$(__clang__)
 cc_major  = $(eval override cc_major := $$(or $$(__clang_major__),$$(__GNUC__)))$(cc_major)
@@ -35,7 +47,7 @@ $(call arg_var,CPU)
 $(call arg_var,DEBUG)
 $(call arg_var,ARCH,native)
 $(call arg_var,TUNE,native)
-$(call arg_var,CSTD,gnu23)
+$(call arg_var,CSTD)
 $(call arg_var,CXXSTD,gnu++23)
 $(call arg_var,USE_CLANG)
 $(call arg_var,CFLAGS)

@@ -4,3 +4,4 @@
 /.qtc_clangd
 /.vscode
 /src/test
+cc-id-macros.h

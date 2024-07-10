@@ -1,12 +1,20 @@
 ifndef __libcanth_internal_mk_included__
 override __libcanth_internal_mk_included__ := 1
 
-override define nl:=
+override define n:=
 
 
 endef
-override prefix-if = $(if $2,$1$2)
-override suffix-if = $(if $1,$1$2)
+
+override .      = $n
+override .if    = $.\#if
+override .elif  = $.\#elif
+override .else  = $.\#else
+override .ifdef = $.\#ifdef
+override .endif = $.\#endif
+
+override pfx-if = $(if $2,$1$2)
+override sfx-if = $(if $1,$1$2)
 
 # Read a command line variable with optional fallback.
 override arg_var = $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
@@ -70,18 +78,47 @@ override define pkg_var_
     endif)
 endef
 
-override define get-defs
-$(eval $(subst #,$(nl),$(shell \
-  for m in $2; do \
-    printf '#ifdef %s\n#pragma push_macro("%s")\n#undef %s\n#define %s override %s:=_Pragma("pop_macro(\\"%s\\")")%s\n%s\n#else\noverride undefine %s\n#endif\n' \
-           "$$m" "$$m" "$$m" "$$m" "$$m" "$$m" "$$m" "$$m" "$$m"; \
-  done | $1 -w -P - | sed -E 's/^ +//;s/([^ =]) *$$/\1#/' | tr -d '\n')))
-endef
+# $1: path of header file to import as make variables
+# $2: preprocessor command, defaults to '$(CC) -E -xc'
+override dbg-macro-header = $(info $(call .get-macro-header,$(value 1),$(value 2)))
+
+# $1: path of header file to import as make variables
+# $2: preprocessor command, defaults to '$(CC) -E -xc'
+override get-macro-header = $(eval $(call .get-macro-header,$(value 1),$(value 2)))
+
+# $1: path of header file to import as make variables
+# $2: preprocessor command, defaults to '$(CC) -E -xc'
+override .get-macro-header = $(subst #,$n,$(shell $(or $2,$(CC) -E -xc) -w -P $1 |\
+  sed 's/^  *//;s/  *$$//;/^$$/d;s/^override/#override/' | tail -c+2 | tr -d '\n'))
+
+# $1: path of header file to create
+# $2: list of preprocessor macro names to export as make variables
+# $3: optional content to place above the generated export directives
+override gen-guarded-macro-header = $(call .gen-macro-header \
+  ,$(value 1),$(value 2),$(value 3),$(strip libcanth_$(shell \
+  echo '$(abspath $(strip $1))' | sha256sum | cut -c1-64)_))
+
+# $1: path of header file to create
+# $2: list of preprocessor macro names to export as make variables
+# $3: optional content to place above the generated export directives
+override gen-macro-header = $(call .gen-macro-header,$(value 1),$(value 2),$(value 3))
+
+# $1: path of header file to create
+# $2: list of preprocessor macro names to export as make variables
+# $3: optional content to place above the generated export directives
+# $4: optional header guard macro name
+override .gen-macro-header = $(file >$1,$(if $(strip $4),#ifndef $4$n#define $4)$(if $(strip\
+ $(value 3)),$(value 3))$(foreach m,$2,$(call gen-macro-export,$m))$(if $(strip $4),$n#endif // $4))
+
+override gen-macro-export = $n\#ifdef $1$n\#pragma push_macro("$1")$n\#undef $1$n\#define\
+ $1 override $1:=_Pragma("pop_macro(\"$1\")")$1$n$1$n\#else$noverride undefine $1$n\#endif
 
 override define import-macros
-$(eval override $1 := $(strip $2))
-$(eval override $(strip $1).get = $$(call get-defs,$$(CC) -E -xc,$$($(strip $1))))
-$(foreach v,$($(strip $1)),$(eval $v = $$($(strip $1).get)$$($v)))
+$(foreach v,$2 $3,$(eval override $v = $$(.get-$O$(strip $1).h)$$($v)))
+$(eval override .ext-$O$(strip $1).h := $$(value 4))
+$(eval override .get-$O$(strip $1).h = $$(eval \
+  $$(call gen-macro-header,$O$(strip $1).h,$2,$$(value .ext-$O$(strip $1).h)) \
+  $$(call get-macro-header,$O$(strip $1).h)override undefine .get-$O$(strip $1).h))
 endef
 
 # Generate rules and dependencies.
@@ -112,8 +149,8 @@ $(foreach t,$1,$(eval $t:| $$O$t)                                       \
   $(eval override OBJ += $$(OBJ_$t))                                    \
 )
 $(eval override OBJ := $$(sort $$(OBJ)) \
-  $(nl)override DEP := $$(OBJ:%.o=%.d)  \
-  $(nl)-include $$(DEP)                 \
+  $noverride DEP := $$(OBJ:%.o=%.d)     \
+  $n-include $$(DEP)                    \
 )
 endef
 
