@@ -53,31 +53,35 @@ jobs:
     - name: GCC debug builds
       run: |
         for _cc in $(grep '^gcc' compilers); do
+          [[ -z "$_cxx" ]] || echo '======='
           _cxx="${_cc/#gcc/g++}"
           mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx" V=1
+          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx"
         done
 
     - name: Clang debug builds
       run: |
         for _cc in $(grep '^clang' compilers); do
+          [[ -z "$_cxx" ]] || echo '======='
           _cxx="${_cc/#clang/clang++}"
           mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx" V=1
+          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx"
         done
 
     - name: GCC release builds
       run: |
         for _cc in $(grep '^gcc' compilers); do
+          [[ -z "$_cxx" ]] || echo '======='
           _cxx="${_cc/#gcc/g++}"
           mkdir -p "build/rel_$_cc"
-          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx" V=1
+          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx"
         done
 
     - name: Clang release builds
       run: |
         for _cc in $(grep '^clang' compilers); do
+          [[ -z "$_cxx" ]] || echo '======='
           _cxx="${_cc/#clang/clang++}"
           mkdir -p "build/rel_$_cc"
-          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx" V=1
+          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx"
         done
