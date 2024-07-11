@@ -3,5 +3,6 @@
 /*.creator.user
 /.qtc_clangd
 /.vscode
+/build
 /src/test
 cc-id-macros.h

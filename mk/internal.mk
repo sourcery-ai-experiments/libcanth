@@ -1,6 +1,14 @@
 ifndef __libcanth_internal_mk_included__
 override __libcanth_internal_mk_included__ := 1
 
+ifneq (,$(filter command file override,$(firstword $(origin DEBUG_MK))))
+  ifneq (1,$(strip $(DEBUG_MK)))
+    override undefine DEBUG_MK
+  endif
+else ifneq (undefined,$(origin DEBUG_MK))
+  override undefine DEBUG_MK
+endif
+
 override define n:=
 
 
@@ -20,22 +28,40 @@ override sfx-if = $(if $1,$1$2)
 override arg_var = $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
 override define arg_var_
   $(eval
-
     ifeq (,$$(filter file override undefined,$$(firstword $$(origin __default_$1))))
       # Unset the __default variable if it was set outside the makefile.
+      $$(if $$(DEBUG_MK),$$(info override undefine __default_$1 [$$(origin __default_$1)]))
       override undefine __default_$1
     endif
 
     ifeq (environment,$$(firstword $$(origin $1)))
       # Unset the target variable if it originates from the environment.
+      $$(if $$(DEBUG_MK),$$(info override undefine $1 [$$(origin $1)]))
       override undefine $1
     else ifeq (default,$$(origin $1))
       # The target variable is a make builtin default.
       ifdef 2
         # Explicit fallback takes precedence over a builtin default value.
+        $$(if $$(DEBUG_MK),$$(info override undefine $1 [default]))
         override undefine $1
       else ifneq (undefined,$$(origin __default_$1))
         # The __default variable takes precedence over the builtin default.
+        $$(if $$(DEBUG_MK),$$(info override undefine $1 [$$(origin $1)]))
+        override undefine $1
+      endif
+    else ifneq (undefined,$$(origin $1))
+      # The target variable was set in the makefile or on the command line.
+      # Unset if it's empty, as we only accept nonempty argument variables
+      # from the user. To allow empty command line variables, __default_$1
+      # must be defined as empty (not undefined), and there must not be an
+      # explicit fallback.
+      ifeq (simple,$$(flavor $1))
+        ifeq (,$$(strip $$($1)))
+          $$(if $$(DEBUG_MK),$$(info override undefine $1 [$$(origin $1)]))
+          override undefine $1
+        endif
+      else ifeq (,$$(strip $$(value $1)))
+        $$(if $$(DEBUG_MK),$$(info override undefine $1 [$$(origin $1)]))
         override undefine $1
       endif
     endif
@@ -43,8 +69,10 @@ override define arg_var_
     ifeq (undefined,$$(origin $1))
       # The target variable is undefined, i.e. we can modify it.
       ifdef 2
+        $$(if $$(DEBUG_MK),$$(info override $1 = $$$$(eval override $1 := $$(value 2))$$$$($1)))
         override $1 = $$(eval override $1 := $(value 2))$$($1)
       else ifneq (undefined,$$(origin __default_$1))
+        $$(if $$(DEBUG_MK),$$(info override $1 = $$$$(eval override $1 := $$(value __default_$1))$$$$($1)))
         override $1 = $$(eval override $1 := $$(value __default_$1))$$($1)
       endif
     endif
@@ -123,9 +151,11 @@ endef
 
 # Generate rules and dependencies.
 override define target_rules
-$(eval override .O = $$(eval override .O := $$$$(shell \
-  realpath --relative-to='$$(THIS_DIR)' '$$O'))$$(eval \
-  override .O := $$$$(if $$$$(.O:.=),$$$$(.O)/))$$(.O))
+$(eval override .O = $$(eval override .O :=$$$$(shell bash -c '         \
+  a=$$$$$$$$(realpath "$$$$O");                                         \
+  b=$$$$$$$$(realpath --relative-to="$$$$(THIS_DIR)" "$$$$O");          \
+  (( $$$$$$$${#a} > $$$$$$$${#b} )) || b="$$$$$$$${a%/}"; printf "%s/"  \
+  "$$$$$$$$b"'))$$(if $$(.O:./=),,$$(eval override .O:=))$$(.O))
 $(eval override undefine OBJ)
 $(foreach t,$1,$(eval $t:| $$O$t)                                       \
   $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o))                    \

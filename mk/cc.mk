@@ -1,10 +1,10 @@
 ifndef __libcanth_cc_mk_included__
 override __libcanth_cc_mk_included__ := 1
 
-include $(lastword $(MAKEFILE_LIST:cc.mk=internal.mk))
+include $(lastword $(MAKEFILE_LIST:cc.mk=arg.mk))
 
-$(call arg_var,CC,  gcc)
-$(call arg_var,CXX, g++)
+$(call arg_var,CC,gcc)
+$(call arg_var,CXX,g++)
 
 $(call import-macros,                   \
   cc-id-macros,                         \
@@ -44,7 +44,6 @@ override __default_CXXFLAGS  = $(__default_CFLAGS)
 override __default_USE_CLANG = $(__clang__)
 
 $(call arg_var,CPU)
-$(call arg_var,DEBUG)
 $(call arg_var,ARCH,native)
 $(call arg_var,TUNE,native)
 $(call arg_var,CSTD)
