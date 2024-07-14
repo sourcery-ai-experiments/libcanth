@@ -18,7 +18,7 @@ ifneq (,$(filter $(PUBLISH),$(or $(MAKECMDGOALS),all)))
 
 include $(THIS_DIR)../common.mk
 
-override SRC_test := $(if $(DEBUG),dbg.c )dstr.c test.c
+override SRC_test := compiler.c compiler.cpp $(if $(DEBUG),dbg.c )dstr.c test.c
 override LIBS_test = $(CJSON_LIBS)
 
 $(call pkg_libs,libcjson,CJSON_LIBS,-lcjson)

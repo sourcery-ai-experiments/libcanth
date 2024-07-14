@@ -5,6 +5,7 @@
  */
 #include <cjson/cJSON.h>
 
+#include "compiler.h"
 #include "dbg.h"
 #include "dstr.h"
 
@@ -12,6 +13,8 @@ int
 main (int    argc,
       char **argv)
 {
+	pr_out("%s / %s", canth_c_version(), canth_cxx_version());
+
 	for (int i = 0; ++i < argc;) {
 		cJSON *json = cJSON_Parse(argv[i]);
 		if (!json) {

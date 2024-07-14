@@ -5,4 +5,5 @@
 /.vscode
 /build
 /src/test
-cc-id-macros.h
+cc.h
+cxx.h

@@ -14,6 +14,21 @@
  */
 #define useless __attribute__((unused))
 
+/** @brief Stringify arguments.
+ */
+#define stringify(...) stringify_(__VA_ARGS__)
+#define stringify_(...) #__VA_ARGS__ ""
+
+#ifndef __cplusplus
+
+#ifdef __clang_major__
+# if __clang_major__ < 19
+#  define constexpr __attribute__((const))
+# endif
+#elif __GNUC__ < 13
+# define constexpr __attribute__((const))
+#endif
+
 /** @brief Check if a value is a char array.
  */
 #define is_char_array(x) _Generic((typeof(x) *){0}, \
@@ -41,5 +56,7 @@
         __builtin_choose_expr(                                          \
                 is_string_literal(lit) && sizeof(lit) <= sizeof(what),  \
                 lit, "")
+
+#endif /* __cplusplus */
 
 #endif /* LIBCANTH_SRC_UTIL_H_ */

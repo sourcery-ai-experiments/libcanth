@@ -9,11 +9,12 @@ else ifneq (undefined,$(origin DEBUG_MK))
   override undefine DEBUG_MK
 endif
 
+override undefine w
+override w := $w $w
 override define n:=
 
 
 endef
-
 override .      = $n
 override .if    = $.\#if
 override .elif  = $.\#elif
@@ -23,9 +24,23 @@ override .endif = $.\#endif
 
 override pfx-if = $(if $2,$1$2)
 override sfx-if = $(if $1,$1$2)
+override join-2 = $2$(and $3,$2,$1)$3
 
 # Read a command line variable with optional fallback.
 override arg_var = $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
+
+override define arg_bool_var
+  $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
+  $(eval
+    ifeq (command line,$$(origin $(strip $1)))
+      override $(strip $1):=$$(strip $$($(strip $1)))
+      ifneq (1,$$($(strip $1)))
+        override undefine $(strip $1)
+      endif
+    endif
+  )
+endef
+
 override define arg_var_
   $(eval
     ifeq (,$$(filter file override undefined,$$(firstword $$(origin __default_$1))))
@@ -120,44 +135,56 @@ override .get-macro-header = $(subst #,$n,$(shell $(or $2,$(CC) -E -xc) -w -P $1
   sed 's/^  *//;s/  *$$//;/^$$/d;s/^override/#override/' | tail -c+2 | tr -d '\n'))
 
 # $1: path of header file to create
-# $2: list of preprocessor macro names to export as make variables
-# $3: optional content to place above the generated export directives
+# $2: optional name prefix for the exported make variables
+# $3: list of preprocessor macro names to export as make variables
+# $4: optional content to place above the generated export directives
 override gen-guarded-macro-header = $(call .gen-macro-header \
-  ,$(value 1),$(value 2),$(value 3),$(strip libcanth_$(shell \
+  ,$(value 1),$(value 2),$(value 3),$(value 4),$(strip libcanth_$(shell \
   echo '$(abspath $(strip $1))' | sha256sum | cut -c1-64)_))
 
 # $1: path of header file to create
-# $2: list of preprocessor macro names to export as make variables
-# $3: optional content to place above the generated export directives
-override gen-macro-header = $(call .gen-macro-header,$(value 1),$(value 2),$(value 3))
+# $2: optional name prefix for the exported make variables
+# $3: list of preprocessor macro names to export as make variables
+# $4: optional content to place above the generated export directives
+override gen-macro-header = $(call .gen-macro-header,$(value 1),$(value 2),$(value 3),$(value 4))
 
+# Create a header file with export directives for preprocessor macros
+# as make variables.
 # $1: path of header file to create
-# $2: list of preprocessor macro names to export as make variables
-# $3: optional content to place above the generated export directives
-# $4: optional header guard macro name
-override .gen-macro-header = $(file >$1,$(if $(strip $4),#ifndef $4$n#define $4)$(if $(strip\
- $(value 3)),$(value 3))$(foreach m,$2,$(call gen-macro-export,$m))$(if $(strip $4),$n#endif // $4))
+# $2: optional name prefix for the exported make variables
+# $3: list of preprocessor macro names to export as make variables
+# $4: optional content to place above the generated export directives
+# $5: optional header guard macro name
+override .gen-macro-header = $(file >$1,$(if $(strip $5),#ifndef $5$n#define $5)$(if $(strip \
+  $(value 4)),$(value 4))$(foreach m,$3,$(call gen-macro-export,$m,$(strip $2)))$(if $(strip \
+  $5),$n#endif // $5))
 
-override gen-macro-export = $n\#ifdef $1$n\#pragma push_macro("$1")$n\#undef $1$n\#define\
- $1 override $1:=_Pragma("pop_macro(\"$1\")")$1$n$1$n\#else$noverride undefine $1$n\#endif
+# Create a preprocessor directive to export a macro as a make variable.
+# $1: preprocessor macro name
+# $2: optional name prefix for the exported make variable
+override gen-macro-export = $n\#ifdef $1$n\#pragma push_macro("$1")$n\#undef $1$n\#define $1\
+ override $2$1 := _Pragma("pop_macro(\"$1\")")$1$n$1$n\#else$noverride undefine $2$1$n\#endif
 
 override define import-macros
-$(foreach v,$2 $3,$(eval override $v = $$(.get-$O$(strip $1).h)$$($v)))
-$(eval override .ext-$O$(strip $1).h := $$(value 4))
+$(foreach v,$(3:%=$(strip $1)%) $4,$(eval override $v = $$(.get-$O$(strip $1).h)$$($v)))
+$(eval override .ext-$O$(strip $1).h := $$(value 5))
 $(eval override .get-$O$(strip $1).h = $$(eval \
-  $$(call gen-macro-header,$O$(strip $1).h,$2,$$(value .ext-$O$(strip $1).h)) \
-  $$(call get-macro-header,$O$(strip $1).h)override undefine .get-$O$(strip $1).h))
+  $$(call gen-macro-header,$O$(strip $1).h,$1,$3,$$(value .ext-$O$(strip $1).h)) \
+  $$(call get-macro-header,$O$(strip $1).h,$2)override undefine .get-$O$(strip $1).h))
 endef
+
+override about = $(if $(strip $2),$(call .about,$(call  join-2, / ,$(if \
+                 $(strip $(CC_OBJ_$(strip $1))),$(strip $(cc_id))),$(if \
+                 $(strip $(CXX_OBJ_$(strip $1))),$(strip $(cxx_id))))))
 
 # Generate rules and dependencies.
 override define target_rules
-$(eval override .O = $$(eval override .O :=$$$$(shell bash -c '         \
-  a=$$$$$$$$(realpath "$$$$O");                                         \
-  b=$$$$$$$$(realpath --relative-to="$$$$(THIS_DIR)" "$$$$O");          \
+$(eval override .O=$$(eval override .O:=$$$$(shell bash -c 'a="$$$$O";  \
+  b=$$$$$$$$(realpath --relative-to="$$$$(THIS_DIR)" "$$$$$$$$a");      \
   (( $$$$$$$${#a} > $$$$$$$${#b} )) || b="$$$$$$$${a%/}"; printf "%s/"  \
-  "$$$$$$$$b"'))$$(if $$(.O:./=),,$$(eval override .O:=))$$(.O))
-$(eval override undefine OBJ)
-$(foreach t,$1,$(eval $t:| $$O$t)                                       \
+  "$$$$$$$$b"'))$$(if $$(.O:./=),,$$(eval override .O:=))$$(.O)$n       \
+  override undefine OBJ                                                 \
+)$(foreach t,$1,$(eval $t:| $$O$t)                                      \
   $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o))                    \
   $(eval override DEP_$t     := $$(OBJ_$t:%.o=%.d))                     \
   $(eval override CC_OBJ_$t  := $$(OBJ_$t:%.cpp.o=))                    \
@@ -165,14 +192,21 @@ $(foreach t,$1,$(eval $t:| $$O$t)                                       \
   $(eval $$(foreach s,$$(SRC_$t),                                       \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                                \
   $(if $(CXX_OBJ_$t),                                                   \
-    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$(.O)$t)                \
-      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t))             \
-    $(eval $$(CXX_OBJ_$t):; $$(call msg,COMPILE,$$(@:$$O%=$$(.O)%))     \
+    $(eval $$O$t: $$(OBJ_$t);                                           \
+      $$(call about,$t,$$?)                                             \
+      $$(call msg,LINK,$$(.O)$t)                                        \
+      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)$n            \
+    $$(CXX_OBJ_$t):;                                                    \
+      $$(call about,$t,$$?)                                             \
+      $$(call msg,CXX,$$(@:$$O%=$$(.O)%))                               \
       +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ -c -MMD $$<),                \
-    $(eval $$O$t: $$(OBJ_$t); $$(call msg,LINK,$$(.O)$t)                \
+    $(eval $$O$t: $$(OBJ_$t);                                           \
+      $$(call about,$t,$$?) $$(call msg,LINK,$$(.O)$t)                  \
       +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)))               \
   $(if $(CC_OBJ_$t),                                                    \
-    $(eval $$(CC_OBJ_$t):; $$(call msg,COMPILE,$$(@:$$O%=$$(.O)%))      \
+    $(eval $$(CC_OBJ_$t):;                                              \
+      $$(call about,$t,$$?)                                             \
+      $$(call msg,CC,$$(@:$$O%=$$(.O)%))                                \
       +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ -c -MMD $$<))                   \
   $(eval clean-$t: $$(eval override WHAT_$t :=                          \
     $$$$(wildcard $$O$t $$(OBJ_$t) $$(DEP_$t))))                        \
@@ -180,10 +214,10 @@ $(foreach t,$1,$(eval $t:| $$O$t)                                       \
     $$(call msg,CLEAN,$$(.O)$t)$Q$$(RM) $$(WHAT_$t),$(nop)))            \
   $(eval install-$t:; $$(call msg,INSTALL,$$(.O)$t)$(nop))              \
   $(eval override OBJ += $$(OBJ_$t))                                    \
-)
-$(eval override OBJ := $$(sort $$(OBJ)) \
-  $noverride DEP := $$(OBJ:%.o=%.d)     \
-  $n-include $$(DEP)                    \
+)$(eval                                                                 \
+  override OBJ := $$(sort $$(OBJ))$n                                    \
+  override DEP := $$(OBJ:.o=.d)$n                                       \
+  -include $$(DEP)                                                      \
 )
 endef
 
