@@ -17,26 +17,15 @@ $(call arg_var,WARNFLAGS)
 $(call arg_bool_var,no_color)
 $(call arg_bool_var,use_clang)
 
-$(call import-macros,                   \
-  c, $(CC) -E -xc,                      \
-  __GNUC__                              \
-  __GNUC_MINOR__                        \
-  __GNUC_PATCHLEVEL__                   \
-  __clang_major__                       \
-  __clang_minor__                       \
-  __clang_patchlevel__,                 \
-  __default_cstd,                       \
-  $(.ifdef) __clang_major__             \
-    $(.if) __clang_major__ > 17         \
-      $.override __default_cstd:=gnu23  \
-    $(.elif) __clang_major__ > 8        \
-      $.override __default_cstd:=gnu2x  \
-    $(.endif)                           \
-  $(.elif) __GNUC__ > 13                \
-    $.override __default_cstd:=gnu23    \
-  $(.elif) __GNUC__ > 8                 \
-    $.override __default_cstd:=gnu2x    \
-  $(.endif))
+$(call import-macros,   \
+  c, $(CC) -E -xc,      \
+  __GNUC__              \
+  __GNUC_MINOR__        \
+  __GNUC_PATCHLEVEL__   \
+  __clang_major__       \
+  __clang_minor__       \
+  __clang_patchlevel__, \
+  __default_cstd)
 $(call arg_var,cstd)
 
 override __default_use_cclang = $(or $(use_clang),$(if $(c__clang_major__),1))
@@ -59,32 +48,15 @@ override __default_CWARNFLAGS   = \
 ))
 $(call arg_var,CWARNFLAGS)
 
-$(call import-macros,                      \
-  cxx, $(CXX) -E -xc++,                    \
-  __GNUC__                                 \
-  __GNUC_MINOR__                           \
-  __GNUC_PATCHLEVEL__                      \
-  __clang_major__                          \
-  __clang_minor__                          \
-  __clang_patchlevel__,                    \
-  __default_cxxstd,                        \
-  $(.ifdef) __clang_major__                \
-    $(.if) __clang_major__ > 16            \
-      $.override __default_cxxstd:=gnu++23 \
-    $(.elif) __clang_major__ > 11          \
-      $.override __default_cxxstd:=gnu++2b \
-    $(.elif) __clang_major__ > 9           \
-      $.override __default_cxxstd:=gnu++20 \
-    $(.elif) __clang_major__ > 4           \
-      $.override __default_cxxstd:=gnu++2a \
-    $(.endif)                              \
-  $(.elif) __GNUC__ > 10                   \
-    $.override __default_cxxstd:=gnu++23   \
-  $(.elif) __GNUC__ > 9                    \
-    $.override __default_cxxstd:=gnu++20   \
-  $(.elif) __GNUC__ > 7                    \
-    $.override __default_cxxstd:=gnu++2a   \
-  $(.endif))
+$(call import-macros,   \
+  cxx, $(CXX) -E -xc++, \
+  __GNUC__              \
+  __GNUC_MINOR__        \
+  __GNUC_PATCHLEVEL__   \
+  __clang_major__       \
+  __clang_minor__       \
+  __clang_patchlevel__, \
+  __default_cxxstd)
 $(call arg_var,cxxstd)
 
 override __default_use_cxxclang = $(or $(use_clang),$(if $(cxx__clang_major__),1))

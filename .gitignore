@@ -5,5 +5,3 @@
 /.vscode
 /build
 /src/test
-cc.h
-cxx.h
