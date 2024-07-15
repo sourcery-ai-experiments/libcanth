@@ -24,6 +24,10 @@ jobs:
       run: |
         sudo apt-get install clang-format clang-tidy clang-tools clang libc++-dev libc++abi-dev libclang-dev libomp-dev lld llvm-dev llvm-runtime llvm
 
+    - name: Install Clang 14 and 15
+      run: |
+        sudo apt-get install clang-14 clang-15
+
     - name: Install dependencies
       run: |
         sudo apt-get install libcjson-dev
