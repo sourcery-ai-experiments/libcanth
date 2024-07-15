@@ -56,7 +56,7 @@ jobs:
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#gcc/g++}"
           mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx"
+          make -j$(nproc) -C src O="../build/dbg_$_cc" debug=1 CC="$_cc" CXX="$_cxx"
         done
 
     - name: Clang debug builds
@@ -65,7 +65,7 @@ jobs:
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#clang/clang++}"
           mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" DEBUG=1 CC="$_cc" CXX="$_cxx"
+          make -j$(nproc) -C src O="../build/dbg_$_cc" debug=1 CC="$_cc" CXX="$_cxx"
         done
 
     - name: GCC release builds

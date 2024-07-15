@@ -3,19 +3,19 @@ override __libcanth_cc_mk_included__ := 1
 
 include $(lastword $(MAKEFILE_LIST:cc.mk=arg.mk))
 
-override __default_CPPFLAGS  = $(if $(DEBUG),,-DNDEBUG)
+override __default_CPPFLAGS  = $(if $(debug),,-DNDEBUG)
 override __default_WARNFLAGS = -Wall -Wextra -Wpedantic
 
-$(call arg_var,ARCH,native)
+$(call arg_var,arch,native)
 $(call arg_var,CC,gcc)
 $(call arg_var,CPPFLAGS)
-$(call arg_var,CPU)
+$(call arg_var,cpu)
 $(call arg_var,CXX,g++)
-$(call arg_var,TUNE,native)
+$(call arg_var,tune,native)
 $(call arg_var,WARNFLAGS)
 
-$(call arg_bool_var,NO_COLOR)
-$(call arg_bool_var,USE_CLANG)
+$(call arg_bool_var,no_color)
+$(call arg_bool_var,use_clang)
 
 $(call import-macros,                   \
   cc, $(CC) -E -xc,                     \
@@ -25,26 +25,26 @@ $(call import-macros,                   \
   __clang_major__                       \
   __clang_minor__                       \
   __clang_patchlevel__,                 \
-  __default_CSTD,                       \
+  __default_cstd,                       \
   $(.ifdef) __clang_major__             \
     $(.if) __clang_major__ > 17         \
-      $.override __default_CSTD:=gnu23  \
+      $.override __default_cstd:=gnu23  \
     $(.elif) __clang_major__ > 8        \
-      $.override __default_CSTD:=gnu2x  \
+      $.override __default_cstd:=gnu2x  \
     $(.endif)                           \
   $(.elif) __GNUC__ > 13                \
-    $.override __default_CSTD:=gnu23    \
+    $.override __default_cstd:=gnu23    \
   $(.elif) __GNUC__ > 8                 \
-    $.override __default_CSTD:=gnu2x    \
+    $.override __default_cstd:=gnu2x    \
   $(.endif))
-$(call arg_var,CSTD)
+$(call arg_var,cstd)
 
-override __default_USE_CCLANG = $(or $(USE_CLANG),$(if $(cc__clang_major__),1))
-$(call arg_bool_var,USE_CCLANG)
-$(if $(DEBUG_MK),$(info USE_CCLANG="$(USE_CCLANG)"))
+override __default_use_cclang = $(or $(use_clang),$(if $(cc__clang_major__),1))
+$(call arg_bool_var,use_cclang)
+$(if $(DEBUG_MK),$(info use_cclang="$(use_cclang)"))
 
 override __default_CWARNFLAGS   = \
-  $(if $(USE_CCLANG),             \
+  $(if $(use_cclang),             \
     -Weverything                  \
     $(addprefix -Wno-,            \
       c++98-compat                \
@@ -67,32 +67,32 @@ $(call import-macros,                      \
   __clang_major__                          \
   __clang_minor__                          \
   __clang_patchlevel__,                    \
-  __default_CXXSTD,                        \
+  __default_cxxstd,                        \
   $(.ifdef) __clang_major__                \
     $(.if) __clang_major__ > 16            \
-      $.override __default_CXXSTD:=gnu++23 \
+      $.override __default_cxxstd:=gnu++23 \
     $(.elif) __clang_major__ > 11          \
-      $.override __default_CXXSTD:=gnu++2b \
+      $.override __default_cxxstd:=gnu++2b \
     $(.elif) __clang_major__ > 9           \
-      $.override __default_CXXSTD:=gnu++20 \
+      $.override __default_cxxstd:=gnu++20 \
     $(.elif) __clang_major__ > 4           \
-      $.override __default_CXXSTD:=gnu++2a \
+      $.override __default_cxxstd:=gnu++2a \
     $(.endif)                              \
   $(.elif) __GNUC__ > 10                   \
-    $.override __default_CXXSTD:=gnu++23   \
+    $.override __default_cxxstd:=gnu++23   \
   $(.elif) __GNUC__ > 9                    \
-    $.override __default_CXXSTD:=gnu++20   \
+    $.override __default_cxxstd:=gnu++20   \
   $(.elif) __GNUC__ > 7                    \
-    $.override __default_CXXSTD:=gnu++2a   \
+    $.override __default_cxxstd:=gnu++2a   \
   $(.endif))
-$(call arg_var,CXXSTD)
+$(call arg_var,cxxstd)
 
-override __default_USE_CXXCLANG = $(or $(USE_CLANG),$(if $(cxx__clang_major__),1))
-$(call arg_bool_var,USE_CXXCLANG)
-$(if $(DEBUG_MK),$(info USE_CXXCLANG="$(USE_CXXCLANG)"))
+override __default_use_cxxclang = $(or $(use_clang),$(if $(cxx__clang_major__),1))
+$(call arg_bool_var,use_cxxclang)
+$(if $(DEBUG_MK),$(info use_cxxclang="$(use_cxxclang)"))
 
 override __default_CXXWARNFLAGS = \
-  $(if $(USE_CXXCLANG),           \
+  $(if $(use_cxxclang),           \
     -Weverything                  \
     $(addprefix -Wno-,            \
       c++98-compat                \
@@ -107,28 +107,28 @@ override __default_CXXWARNFLAGS = \
 ))
 $(call arg_var,CXXWARNFLAGS)
 
-override __default_NO_LTO = $(filter-out 11,$(USE_CCLANG)$(USE_CXXCLANG))
-$(call arg_bool_var,NO_LTO)
-$(if $(DEBUG_MK),$(info NO_LTO="$(NO_LTO)"))
+override __default_no_lto = $(filter-out 11,$(use_cclang)$(use_cxxclang))
+$(call arg_bool_var,no_lto)
+$(if $(DEBUG_MK),$(info no_lto="$(no_lto)"))
 
-override __default_CFLAGS = $(if $(ARCH),-march=$(ARCH)) $(if $(CPU),-mcpu=$(CPU)) \
-  $(if $(TUNE),-mtune=$(TUNE)) -O$(if $(DEBUG),$(if $(USE_CCLANG),0,g) -ggdb3,2)   \
-  $(if $(NO_COLOR),,$(if $(USE_CCLANG),-fcolor-diagnostics))                       \
-  $(if $(NO_LTO),,-flto=$(if $(USE_CCLANG),full,auto)) -pipe
+override __default_CFLAGS = $(if $(arch),-march=$(arch)) $(if $(cpu),-mcpu=$(cpu)) \
+  $(if $(tune),-mtune=$(tune)) -O$(if $(debug),$(if $(use_cclang),0,g) -ggdb3,2)   \
+  $(if $(no_color),,$(if $(use_cclang),-fcolor-diagnostics))                       \
+  $(if $(no_lto),,-flto=$(if $(use_cclang),full,auto)) -pipe
 $(call arg_var,CFLAGS)
 
-override __default_CXXFLAGS = $(if $(ARCH),-march=$(ARCH)) $(if $(CPU),-mcpu=$(CPU)) \
-  $(if $(TUNE),-mtune=$(TUNE)) -O$(if $(DEBUG),$(if $(USE_CXXCLANG),0,g) -ggdb3,2)   \
-  $(if $(NO_COLOR),,$(if $(USE_CXXLANG),-fcolor-diagnostics))                        \
-  $(if $(NO_LTO),,-flto=$(if $(USE_CXXLANG),full,auto)) -pipe
+override __default_CXXFLAGS = $(if $(arch),-march=$(arch)) $(if $(cpu),-mcpu=$(cpu)) \
+  $(if $(tune),-mtune=$(tune)) -O$(if $(debug),$(if $(use_cxxclang),0,g) -ggdb3,2)   \
+  $(if $(no_color),,$(if $(use_cxxclang),-fcolor-diagnostics))                        \
+  $(if $(no_lto),,-flto=$(if $(use_cxxclang),full,auto)) -pipe
 $(call arg_var,CXXFLAGS)
 
 override C_BUILDFLAGS = $(eval \
-  override C_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(CSTD)) \
+  override C_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(cstd)) \
   $$(CFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CWARNFLAGS)))$(C_BUILDFLAGS)
 
 override CXX_BUILDFLAGS = $(eval \
-  override CXX_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(CXXSTD)) \
+  override CXX_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(cxxstd)) \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
 override cc_id = $(eval override cc_id := $$(strip $$(if $$(cc__clang_major__),\

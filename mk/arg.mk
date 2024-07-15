@@ -12,7 +12,7 @@ $(eval override O=$$(eval override O:=$$$$(patsubst\
 
 $(call arg_var,PKG_CONFIG,pkg-config)
 
-$(call arg_bool_var,DEBUG)
+$(call arg_bool_var,debug)
 $(call arg_bool_var,Q)
 $(call arg_bool_var,V)
 
