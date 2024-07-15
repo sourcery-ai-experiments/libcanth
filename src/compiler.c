@@ -3,22 +3,18 @@
  *
  * @author Juuso Alasuutari
  */
-#include "util.h"
+#include "compiler.h"
 
-extern char const *canth_c_version (void);
-
-char const *
+const_nonnull char const *
 canth_c_version (void)
 {
-	constexpr static const char version_string[] =
 #ifdef __clang__
-	        "clang " stringify(__clang_major__) "."
-	                 stringify(__clang_minor__) "."
-	                 stringify(__clang_patchlevel__);
+	return "clang " stringify(__clang_major__)
+	            "." stringify(__clang_minor__)
+	            "." stringify(__clang_patchlevel__);
 #else
-	        "gcc " stringify(__GNUC__)       "."
-	               stringify(__GNUC_MINOR__) "."
-	               stringify(__GNUC_PATCHLEVEL__);
+	return "gcc " stringify(__GNUC__)
+	          "." stringify(__GNUC_MINOR__)
+	          "." stringify(__GNUC_PATCHLEVEL__);
 #endif
-	return version_string;
 }

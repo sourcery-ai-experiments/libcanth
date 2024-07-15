@@ -6,12 +6,14 @@
 #ifndef LIBCANTH_SRC_COMPILER_H_
 #define LIBCANTH_SRC_COMPILER_H_
 
+#include "util.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-extern char const *canth_c_version (void);
-extern char const *canth_cxx_version (void);
+extern const_nonnull char const *canth_c_version (void);
+extern const_nonnull char const *canth_cxx_version (void);
 
 #ifdef __cplusplus
 }
