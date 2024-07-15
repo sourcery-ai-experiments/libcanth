@@ -20,12 +20,18 @@
 #   define std() gnu18
 #  elif __clang_major__ > 5
 #   define std() gnu17
+#  elif __clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ > 0)
+#   define std() gnu11
 #  endif /* __clang_major__ */
 # elif defined __GNUC__
 #  if __GNUC__ > 13
 #   define std() gnu23
 #  elif __GNUC__ > 8
 #   define std() gnu2x
+#  elif __GNUC__ > 7
+#   define std() gnu18
+#  elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 6)
+#   define std() gnu11
 #  endif /* __GNUC__ */
 # endif /* __clang_major__ || __GNUC__ */
 #else /* __cplusplus */
