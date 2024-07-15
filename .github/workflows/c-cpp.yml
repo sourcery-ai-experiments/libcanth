@@ -20,7 +20,7 @@ jobs:
         sudo apt-get update
         sudo apt-get upgrade -y
 
-    - name: Install library dependencies
+    - name: Install libcanth dependencies
       run: |
         sudo apt-get install libcjson-dev
 
@@ -28,49 +28,28 @@ jobs:
       run: |
         sudo apt-get install clang{,-{format,tidy,tools}} lib{c++{,abi},clang,omp}-dev lld llvm{,-dev,-runtime}
 
-    - name: Install Clang 15 and 14
-      run: |
-        sudo apt-get install clang-{15,14}
-
-    - name: Install GCC 11, 10, and 9
-      run: |
-        sudo apt-get install {gcc,g++}-{11,10,9}
-
-    - name: Add Ubuntu 22.04 repo
+    - name: Add Ubuntu 22.04 and 20.04 package repos
       run: |
         printf 'deb http://archive.ubuntu.com/ubuntu/ %s main restricted universe multiverse\n' jammy{,-{updates,security,backports}} | sudo tee /etc/apt/sources.list.d/jammy.list
-        sudo apt-get update
-
-    - name: Install Clang 13, 12, and 11
-      run: |
-        sudo apt-get install clang-{13,12,11} llvm-{13,12,11}-linker-tools
-
-    - name: Add Ubuntu 20.04 repo
-      run: |
         printf 'deb http://archive.ubuntu.com/ubuntu/ %s main restricted universe multiverse\n' focal{,-{updates,security,backports}} | sudo tee /etc/apt/sources.list.d/focal.list
         sudo apt-get update
 
-    - name: Install Clang 10, 9, 8, 7, and 6
+    - name: Install Clang 6 through 15 and GCC 7 through 11
       run: |
-        sudo apt-get install clang-{10,9,8,7,6.0} llvm-{10,9,8,7,6.0}-dev
-
-    - name: Describe host
-      run: |
-        uname -a
-        gcc --version
-        clang --version
+        sudo apt-get install clang-{6.0,7,8,9,10,11,12,13,14,15} llvm-{{6.0,7,8,9,10}-dev,{11,12,13}-linker-tools} g{cc,++}-{7,8,9,10,11}
 
     - uses: actions/checkout@v4
 
-    - name: Introspect compilers
+    - name: Describe host and compilers
       run: |
         set +e
-        { compgen -c clang; compgen -c gcc; } | grep -E '^(clang|gcc)(-[1-9][0-9]*)?$' | sort -V -u -r > compilers
+        uname -a
+        { compgen -c clang; compgen -c gcc; } | grep -E '^(clang|gcc)(-[1-9][0-9]*(\.[0-9]+)*)?$' | sort -V -u -r > compilers
         grep -Fxe clang -e gcc compilers > default-compilers
         cat default-compilers | xargs -I§ bash -c 'realpath "$(command -v §)" 2>/dev/null' | paste - default-compilers | grep -Ev '^[[:blank:]]*$' > default-compilers2
         grep -Fvxf default-compilers compilers > versioned-compilers
         cat versioned-compilers | xargs -I§ bash -c 'realpath "$(command -v §)" 2>/dev/null' | paste - versioned-compilers | grep -Ev '^[[:blank:]]*$' > versioned-compilers2
-        sed 's/-[1-9][0-9]*$//' versioned-compilers2 | grep -Fxvf- default-compilers2 > compilers2
+        sed 's/-[1-9][0-9\.]*$//' versioned-compilers2 | grep -Fxvf- default-compilers2 > compilers2
         cat versioned-compilers2 >> compilers2
         cut -f2 compilers2 > compilers
         rm -f compilers2 default-compilers2 versioned-compilers2
@@ -78,36 +57,62 @@ jobs:
 
     - name: GCC debug builds
       run: |
+        set +e
         for _cc in $(grep '^gcc' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#gcc/g++}"
-          mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" debug=1 CC="$_cc" CXX="$_cxx"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
         done
 
     - name: Clang debug builds
       run: |
+        set +e
         for _cc in $(grep '^clang' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#clang/clang++}"
-          mkdir -p "build/dbg_$_cc"
-          make -j$(nproc) -C src O="../build/dbg_$_cc" debug=1 CC="$_cc" CXX="$_cxx"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
         done
 
     - name: GCC release builds
       run: |
+        set +e
         for _cc in $(grep '^gcc' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#gcc/g++}"
-          mkdir -p "build/rel_$_cc"
-          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
         done
 
     - name: Clang release builds
       run: |
+        set +e
         for _cc in $(grep '^clang' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
           _cxx="${_cc/#clang/clang++}"
-          mkdir -p "build/rel_$_cc"
-          make -j$(nproc) -C src O="../build/rel_$_cc" CC="$_cc" CXX="$_cxx"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
         done
+
+    - name: Report
+      run: |
+        set +e
+        ng=$(shopt -p nullglob)
+        shopt -s nullglob
+        a=(build/*/failed)
+        $ng
+        if (( ${#a[@]} )); then
+          a=("${a[@]%/failed}")
+          printf '%s\n' "Failures: ${#a[@]}" "${a[@]/#build\//- }"
+          exit 1
+        fi
+        echo 'All OK'
