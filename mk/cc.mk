@@ -18,7 +18,7 @@ $(call arg_bool_var,no_color)
 $(call arg_bool_var,use_clang)
 
 $(call import-macros,                   \
-  cc, $(CC) -E -xc,                     \
+  c, $(CC) -E -xc,                      \
   __GNUC__                              \
   __GNUC_MINOR__                        \
   __GNUC_PATCHLEVEL__                   \
@@ -39,7 +39,7 @@ $(call import-macros,                   \
   $(.endif))
 $(call arg_var,cstd)
 
-override __default_use_cclang = $(or $(use_clang),$(if $(cc__clang_major__),1))
+override __default_use_cclang = $(or $(use_clang),$(if $(c__clang_major__),1))
 $(call arg_bool_var,use_cclang)
 $(if $(DEBUG_MK),$(info use_cclang="$(use_cclang)"))
 
@@ -131,12 +131,12 @@ override CXX_BUILDFLAGS = $(eval \
   override CXX_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(cxxstd)) \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
-override cc_id = $(eval override cc_id := $$(strip $$(if $$(cc__clang_major__),\
-  clang $$(cc__clang_major__).$$(cc__clang_minor__).$$(cc__clang_patchlevel__),\
-  gcc $$(cc__GNUC__).$$(cc__GNUC_MINOR__).$$(cc__GNUC_PATCHLEVEL__))))$(cc_id)
+override CC_id = $(eval override CC_id := $$(strip $$(if $$(c__clang_major__),\
+  clang $$(c__clang_major__).$$(c__clang_minor__).$$(c__clang_patchlevel__),\
+  gcc $$(c__GNUC__).$$(c__GNUC_MINOR__).$$(c__GNUC_PATCHLEVEL__))))$(CC_id)
 
-override cxx_id = $(eval override cxx_id := $$(strip $$(if $$(cxx__clang_major__),\
+override CXX_id = $(eval override CXX_id := $$(strip $$(if $$(cxx__clang_major__),\
   clang++ $$(cxx__clang_major__).$$(cxx__clang_minor__).$$(cxx__clang_patchlevel__),\
-  g++ $$(cxx__GNUC__).$$(cxx__GNUC_MINOR__).$$(cxx__GNUC_PATCHLEVEL__))))$(cxx_id)
+  g++ $$(cxx__GNUC__).$$(cxx__GNUC_MINOR__).$$(cxx__GNUC_PATCHLEVEL__))))$(CXX_id)
 
 endif

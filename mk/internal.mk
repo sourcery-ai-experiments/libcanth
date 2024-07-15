@@ -174,8 +174,8 @@ $(eval override .get-$O$(strip $1).h = $$(eval \
 endef
 
 override about = $(if $(strip $2),$(call .about,$(call  join-2, / ,$(if \
-                 $(strip $(CC_OBJ_$(strip $1))),$(strip $(cc_id))),$(if \
-                 $(strip $(CXX_OBJ_$(strip $1))),$(strip $(cxx_id))))))
+                 $(strip $(CC_OBJ_$(strip $1))),$(strip $(CC_id))),$(if \
+                 $(strip $(CXX_OBJ_$(strip $1))),$(strip $(CXX_id))))))
 
 # Generate rules and dependencies.
 override define target_rules
