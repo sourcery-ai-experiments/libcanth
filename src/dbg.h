@@ -17,15 +17,26 @@
 
 #include "ligma.h"
 
+#undef HAVE_VA_OPT
 #ifdef __clang_major__
-# if __clang_major__ < 12
+# if __clang_major__ > 11
+#  define HAVE_VA_OPT 1
+# endif /* __clang_major__ > 11 */
+#elif defined __GNUC__
+# if __GNUC__ > 7
+#  define HAVE_VA_OPT 1
+# endif /* __GNUC__ > 7 */
+#endif /* __clang_major__ || __GNUC__ */
+
+#ifndef HAVE_VA_OPT
 diag_clang_push_ignore("-Wreserved-id-macro")
 diag_clang_ignore("-Wgnu-zero-variadic-macro-arguments")
-#  define __VA_OPT__(x, ...) diag_clang_push_ignore("-Wgnu-zero" \
-   "-variadic-macro-arguments") , ## __VA_ARGS__ diag_clang(pop)
+# define __VA_OPT__(x, ...) \
+  diag_clang_push_ignore("-Wgnu-zero-variadic-macro-arguments") \
+  , ## __VA_ARGS__ \
+  diag_clang(pop)
 diag_clang(pop)
-# endif /* __clang_major__ < 12 */
-#endif /* __clang_major__ */
+#endif /* HAVE_VA_OPT */
 
 /*
  * These neither prepend the calling function nor append a trailing newline.
@@ -42,7 +53,10 @@ diag_clang(pop)
 /*
  * This appends a trailing newline.
  */
-#define pr_out(fmt, ...)    pr_out_(fmt "\n" __VA_OPT__(, __VA_ARGS__))
+#define pr_out(fmt, ...)                                                \
+        diag_clang_push_ignore("-Wgnu-zero-variadic-macro-arguments")   \
+        pr_out_(fmt "\n" __VA_OPT__(, __VA_ARGS__))                     \
+        diag_clang(pop)
 
 /*
  * These prepend the calling function, but do not append a trailing newline.
@@ -56,7 +70,10 @@ diag_clang(pop)
  * These prepend the calling function, and also append a trailing newline.
  */
 #define pr_wrn(fmt, ...)    pr_wrn_("%s: " fmt, __func__ __VA_OPT__(, __VA_ARGS__))
-#define pr_err(fmt, ...)    pr_err_("%s: " fmt, __func__ __VA_OPT__(, __VA_ARGS__))
+#define pr_err(fmt, ...)                                                \
+        diag_clang_push_ignore("-Wgnu-zero-variadic-macro-arguments")   \
+        pr_err_("%s: " fmt, __func__ __VA_OPT__(, __VA_ARGS__))         \
+        diag_clang(pop)
 #define pr_errno(e, ...)    pr__strerror(err, (e) __VA_OPT__(, __VA_ARGS__))
 #define pr_wrrno(e, ...)    pr__strerror(wrn, (e) __VA_OPT__(, __VA_ARGS__))
 
@@ -84,7 +101,10 @@ diag_clang(pop)
 
 #else /* NDEBUG */
 
-# define pr_dbg_(fmt, ...)  pr_(       fmt "\n" __VA_OPT__(, __VA_ARGS__))
+# define pr_dbg_(fmt, ...)                                              \
+        diag_clang_push_ignore("-Wgnu-zero-variadic-macro-arguments")   \
+        pr_(       fmt "\n" __VA_OPT__(, __VA_ARGS__))                  \
+        diag_clang(pop)
 # define pr_dbg(fmt, ...)   pr_("%s:%d:%s: " fmt "\n", __FILE__, \
                                 __LINE__, __func__ __VA_OPT__(, __VA_ARGS__))
 # define IF_DEBUG(...)      __VA_ARGS__
