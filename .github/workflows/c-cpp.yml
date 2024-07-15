@@ -108,11 +108,23 @@ jobs:
         set +e
         ng=$(shopt -p nullglob)
         shopt -s nullglob
-        a=(build/*/failed)
+        a=($(printf '%s\n' build/*/failed | grep -Ev '^[[:blank:]]*$' | sort -V -r))
         $ng
         if (( ${#a[@]} )); then
           a=("${a[@]%/failed}")
           printf '%s\n' "Failures: ${#a[@]}" "${a[@]/#build\//- }"
           exit 1
         fi
-        echo 'All OK'
+        echo 'All builds succeeded, running tests...'
+        declare -i n=0
+        for x in $(printf '%s\n' build/*/test | grep -Ev '^[[:blank:]]*$' | sort -V -r); do
+          y=$("$x" 2>&1)
+          (( n += $? != 0 ))
+          x="${x#build/}"
+          printf -vx -- '%-13s|' "${x%/test}"
+          echo "$y" | sed "s,^,$x ,"
+        done
+        if (( n )); then
+          echo "Failures: $n"
+          exit 1
+        fi
