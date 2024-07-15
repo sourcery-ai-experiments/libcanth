@@ -16,6 +16,10 @@
 #   define std() gnu23
 #  elif __clang_major__ > 8
 #   define std() gnu2x
+#  elif __clang_major__ > 7
+#   define std() gnu18
+#  elif __clang_major__ > 5
+#   define std() gnu17
 #  endif /* __clang_major__ */
 # elif defined __GNUC__
 #  if __GNUC__ > 13
