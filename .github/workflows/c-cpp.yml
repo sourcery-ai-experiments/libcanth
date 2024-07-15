@@ -20,21 +20,39 @@ jobs:
         sudo apt-get update
         sudo apt-get upgrade -y
 
-    - name: Upgrade Clang
-      run: |
-        sudo apt-get install clang-format clang-tidy clang-tools clang libc++-dev libc++abi-dev libclang-dev libomp-dev lld llvm-dev llvm-runtime llvm
-
-    - name: Install Clang 14 and 15
-      run: |
-        sudo apt-get install clang-14 clang-15
-
-    - name: Install GCC 9, 10, and 11
-      run: |
-        sudo apt-get install gcc-9 g++-9 gcc-10 g++-10 gcc-11 g++-11
-
-    - name: Install dependencies
+    - name: Install library dependencies
       run: |
         sudo apt-get install libcjson-dev
+
+    - name: Upgrade Clang
+      run: |
+        sudo apt-get install clang{,-{format,tidy,tools}} lib{c++{,abi},clang,omp}-dev lld llvm{,-dev,-runtime}
+
+    - name: Install Clang 15 and 14
+      run: |
+        sudo apt-get install clang-{15,14}
+
+    - name: Install GCC 11, 10, and 9
+      run: |
+        sudo apt-get install {gcc,g++}-{11,10,9}
+
+    - name: Add Ubuntu 22.04 repo
+      run: |
+        printf 'deb http://archive.ubuntu.com/ubuntu/ %s main restricted universe multiverse\n' jammy{,-{updates,security,backports}} | sudo tee /etc/apt/sources.list.d/jammy.list
+        sudo apt-get update
+
+    - name: Install Clang 13, 12, and 11
+      run: |
+        sudo apt-get install clang-{13,12,11} llvm-{13,12,11}-linker-tools
+
+    - name: Add Ubuntu 20.04 repo
+      run: |
+        printf 'deb http://archive.ubuntu.com/ubuntu/ %s main restricted universe multiverse\n' focal{,-{updates,security,backports}} | sudo tee /etc/apt/sources.list.d/focal.list
+        sudo apt-get update
+
+    - name: Install Clang 10, 9, 8, 7, and 6
+      run: |
+        sudo apt-get install clang-{10,9,8,7,6.0} llvm-{10,9,8,7,6.0}-dev
 
     - name: Describe host
       run: |
