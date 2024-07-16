@@ -40,7 +40,7 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - name: Describe host and compilers
+    - name: Get available compilers, run warnings summary builds
       run: |
         set +e
         uname -a
@@ -54,6 +54,7 @@ jobs:
         cut -f2 compilers2 > compilers
         rm -f compilers2 default-compilers2 versioned-compilers2
         cat compilers
+        scripts/warnings-summary.sh $(< compilers)
 
     - name: GCC debug builds
       run: |
