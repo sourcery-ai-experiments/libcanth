@@ -2,6 +2,27 @@
 
 set +e
 
+get_compilers() {
+	local -a compilers=($({ compgen -c clang; compgen -c gcc; } |
+		grep -E '^(clang|gcc)(-[0-9]+(\.[0-9]+)*)?$' | sort -V -u)
+	)
+	local p x=" ${!compilers[@]}"
+	printf -vx -- "${x// / [\"%s\"]=}" "${compilers[@]}"
+	eval "local -Ai index_by_name=(${x:1})"
+	local -A name_by_path
+	for x in ${compilers[@]//*-*} ${compilers[@]%%*[^0-9]}; do
+		p=$(realpath "$(command -v "$x" 2>/dev/null)")
+		[[ -z "$p" ]] || name_by_path["$p"]="$x"
+	done
+	local -a arr
+	for x in "${name_by_path[@]}"; do
+		local -i i=${index_by_name["$x"]}
+		arr[i]="$x"
+		printf "%s\n" "${arr[i]}"
+	done
+	printf "%s\n" "${arr[@]}"
+}
+
 compilers=("$@");
 (( ${#compilers[@]} )) || compilers=(
   clang-{6.0,7,8,9,10,11,12,13,14,15,16,17,18,19}
