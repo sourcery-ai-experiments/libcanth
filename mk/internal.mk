@@ -27,6 +27,12 @@ override .endif = $.\#endif
 override pfx-if = $(if $2,$1$2)
 override sfx-if = $(if $1,$1$2)
 override join-2 = $2$(and $3,$2,$1)$3
+override a-an   = a$(if $(filter a% e% i% o% u%,$(word 1,$1)),n) $1
+override CSI = $(eval override CSI:=$$(shell printf '\033['))$(CSI)
+
+override desc-origin = $1 is $(call a-an,$(origin $1)) variable
+override fail-origin = $(error $(file >/dev/stderr,$(CSI)1;31merror:$(CSI)m $(call desc-origin,$1)))
+override warn-origin = $(file >/dev/stderr,$(CSI)1;33mwarning:$(CSI)m $(call desc-origin,$1))
 
 # Read a command line variable with optional fallback.
 override arg_var = $(call arg_var_,$(strip $(value 1)),$(strip $(value 2)))
@@ -45,10 +51,17 @@ endef
 
 override define arg_var_
   $(eval
-    ifeq (,$$(filter file override undefined,$$(firstword $$(origin __default_$1))))
-      # Unset the __default variable if it was set outside the makefile.
+    ifeq (environment,$$(origin __default_$1))
+      # Unset the __default variable if it originates from the environment
+      # (because it's probably not shadowing a file variable).
+      $$(call warn-origin,__default_$1)
       $$(if $$(DEBUG_MK),$$(info override undefine __default_$1 [$$(origin __default_$1)]))
       override undefine __default_$1
+    else ifeq (,$$(filter file override undefined,$$(firstword $$(origin __default_$1))))
+      # Abort if __default might be a command line or environment override
+      # variable, as they can be used to mess with the build by clobbering
+      # non-override file vars.
+      $$(call fail-origin,__default_$1)
     endif
 
     ifeq (environment,$$(firstword $$(origin $1)))
