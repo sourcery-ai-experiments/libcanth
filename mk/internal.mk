@@ -170,25 +170,22 @@ $(eval override .O=$$(eval override .O:=$$$$(shell bash -c 'a="$$$$O";  \
   $(eval override DEP_$t     := $$(OBJ_$t:%.o=%.d))                     \
   $(eval override CC_OBJ_$t  := $$(OBJ_$t:%.cpp.o=))                    \
   $(eval override CXX_OBJ_$t := $$(OBJ_$t:%.c.o=))                      \
+  $(eval $$O$t: $$(OBJ_$t);                                             \
+    $$(call about,$t,$$?)                                               \
+    $$(call msg,LINK,$$(.O)$t)                                          \
+    +$Q$$(CC) $$(C_BUILDFLAGS) $$(CFLAGS_$t) -o $$@ $$^ $$(LIBS_$t))    \
   $(eval $$(foreach s,$$(SRC_$t),                                       \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                                \
-  $(if $(CXX_OBJ_$t),                                                   \
-    $(eval $$O$t: $$(OBJ_$t);                                           \
-      $$(call about,$t,$$?)                                             \
-      $$(call msg,LINK,$$(.O)$t)                                        \
-      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)$n            \
-    $$(CXX_OBJ_$t):;                                                    \
-      $$(call about,$t,$$?)                                             \
-      $$(call msg,CXX,$$(@:$$O%=$$(.O)%))                               \
-      +$Q$$(CXX) $$(CXX_BUILDFLAGS) -o $$@ -c -MMD $$<),                \
-    $(eval $$O$t: $$(OBJ_$t);                                           \
-      $$(call about,$t,$$?) $$(call msg,LINK,$$(.O)$t)                  \
-      +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ $$^ $$(LIBS_$t)))               \
   $(if $(CC_OBJ_$t),                                                    \
     $(eval $$(CC_OBJ_$t):;                                              \
       $$(call about,$t,$$?)                                             \
       $$(call msg,CC,$$(@:$$O%=$$(.O)%))                                \
-      +$Q$$(CC) $$(C_BUILDFLAGS) -o $$@ -c -MMD $$<))                   \
+      +$Q$$(CC) $$(C_BUILDFLAGS) $$(CFLAGS_$t) -o $$@ -c -MMD $$<))     \
+  $(if $(CXX_OBJ_$t),                                                   \
+    $(eval $$(CXX_OBJ_$t):;                                             \
+      $$(call about,$t,$$?)                                             \
+      $$(call msg,CXX,$$(@:$$O%=$$(.O)%))                               \
+      +$Q$$(CXX) $$(CXX_BUILDFLAGS) $$(CXXFLAGS_$t) -o $$@ -c -MMD $$<))\
   $(eval clean-$t: $$(eval override WHAT_$t :=                          \
     $$$$(wildcard $$O$t $$(OBJ_$t) $$(DEP_$t))))                        \
   $(eval clean-$t: $$(if $$(WHAT_$t),| yeet);$$(if $$(WHAT_$t),         \
