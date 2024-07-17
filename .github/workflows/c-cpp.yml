@@ -129,3 +129,95 @@ jobs:
           echo "Failures: $n"
           exit 1
         fi
+
+  build-macos-14:
+    runs-on: macos-14
+    steps:
+    - name: Install dependencies
+      run: |
+        set +e
+        alias nproc='sysctl -n hw.logicalcpu'
+        echo "bash $BASH_VERSION"
+        brew update
+        brew upgrade
+        brew install bash binutils cjson coreutils gnu-sed llvm make pkg-config
+        p="$(brew --prefix)"
+        PATH="$p/opt/binutils/bin:$p/opt/llvm/bin:$p/opt/coreutils/libexec/gnubin:$p/opt/gnu-sed/libexec/gnubin:$p/opt/make/libexec/gnubin:$PATH"
+        echo "PATH=$PATH" >> "$GITHUB_ENV"
+
+    - uses: actions/checkout@v4
+
+    - name: Get available compilers, run warnings summary builds
+      shell: bash
+      run: |
+        set +e
+        uname -a
+        echo "bash $BASH_VERSION"
+        alias nproc='sysctl -n hw.logicalcpu'
+        { compgen -c clang; compgen -c gcc; } | grep -E '^(clang|gcc)(-[1-9][0-9]*(\.[0-9]+)*)?$' | sort -V -u -r > compilers
+        grep -Fxe clang -e gcc compilers > default-compilers
+        cat default-compilers | xargs -I§ bash -c 'realpath "$(command -v §)" 2>/dev/null' | paste - default-compilers | grep -Ev '^[[:blank:]]*$' > default-compilers2
+        grep -Fvxf default-compilers compilers > versioned-compilers
+        cat versioned-compilers | xargs -I§ bash -c 'realpath "$(command -v §)" 2>/dev/null' | paste - versioned-compilers | grep -Ev '^[[:blank:]]*$' > versioned-compilers2
+        sed 's/-[1-9][0-9\.]*$//' versioned-compilers2 | grep -Fxvf- default-compilers2 > compilers2
+        cat versioned-compilers2 >> compilers2
+        cut -f2 compilers2 > compilers
+        rm -f compilers2 default-compilers2 versioned-compilers2
+        cat compilers
+        scripts/warnings-summary.sh $(< compilers)
+
+    - name: GCC debug builds
+      shell: bash
+      run: |
+        set +e
+        alias nproc='sysctl -n hw.logicalcpu'
+        for _cc in $(grep '^gcc' compilers); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          _cxx="${_cc/#gcc/g++}"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: Clang debug builds
+      shell: bash
+      run: |
+        set +e
+        alias nproc='sysctl -n hw.logicalcpu'
+        for _cc in $(grep '^clang' compilers); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          _cxx="${_cc/#clang/clang++}"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: GCC release builds
+      shell: bash
+      run: |
+        set +e
+        alias nproc='sysctl -n hw.logicalcpu'
+        for _cc in $(grep '^gcc' compilers); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          _cxx="${_cc/#gcc/g++}"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: Clang release builds
+      shell: bash
+      run: |
+        set +e
+        alias nproc='sysctl -n hw.logicalcpu'
+        for _cc in $(grep '^clang' compilers); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          _cxx="${_cc/#clang/clang++}"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
