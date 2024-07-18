@@ -11,27 +11,36 @@ $(call arg_var,CPPFLAGS)
 $(call arg_var,CXX,g++)
 $(call arg_var,WARNFLAGS)
 
+$(call arg_var,arch)
+$(call arg_var,cpu)
+$(call arg_var,std)
+$(call arg_var,tune)
+
 $(call arg_bool_var,no_color)
 $(call arg_bool_var,use_clang)
 
-$(call import-macros,   \
-  c, $(CC) -E -xc,      \
-  __APPLE__             \
-  __GNUC__              \
-  __GNUC_MINOR__        \
-  __GNUC_PATCHLEVEL__   \
-  __clang_major__       \
-  __clang_minor__       \
-  __clang_patchlevel__, \
-  __default_c_arch      \
-  __default_c_cpu       \
-  __default_c_std       \
-  __default_c_tune      \
+$(call import-macros,     \
+  c, $(CC) -E -xc,        \
+  __APPLE__               \
+  __GNUC__                \
+  __GNUC_MINOR__          \
+  __GNUC_PATCHLEVEL__     \
+  __apple_build_version__ \
+  __clang_major__         \
+  __clang_minor__         \
+  __clang_patchlevel__,   \
+  __default_c_arch        \
+  __default_c_cpu         \
+  __default_c_std         \
+  __default_c_tune        \
+  __default_c_no_va_opt   \
 )
 $(call arg_var,c_arch)
 $(call arg_var,c_cpu)
 $(call arg_var,c_std)
 $(call arg_var,c_tune)
+
+$(call arg_bool_var,c_no_va_opt)
 
 override __default_use_cclang = $(or $(use_clang),$(if $(c__clang_major__),1))
 $(call arg_bool_var,use_cclang)
@@ -53,19 +62,20 @@ override __default_CWARNFLAGS   = \
 ))
 $(call arg_var,CWARNFLAGS)
 
-$(call import-macros,   \
-  cxx, $(CXX) -E -xc++, \
-  __APPLE__             \
-  __GNUC__              \
-  __GNUC_MINOR__        \
-  __GNUC_PATCHLEVEL__   \
-  __clang_major__       \
-  __clang_minor__       \
-  __clang_patchlevel__, \
-  __default_cxx_arch    \
-  __default_cxx_cpu     \
-  __default_cxx_std     \
-  __default_cxx_tune    \
+$(call import-macros,     \
+  cxx, $(CXX) -E -xc++,   \
+  __APPLE__               \
+  __GNUC__                \
+  __GNUC_MINOR__          \
+  __GNUC_PATCHLEVEL__     \
+  __apple_build_version__ \
+  __clang_major__         \
+  __clang_minor__         \
+  __clang_patchlevel__,   \
+  __default_cxx_arch      \
+  __default_cxx_cpu       \
+  __default_cxx_std       \
+  __default_cxx_tune      \
 )
 $(call arg_var,cxx_arch)
 $(call arg_var,cxx_cpu)
@@ -110,7 +120,8 @@ $(call arg_var,CXXFLAGS)
 
 override C_BUILDFLAGS = $(eval \
   override C_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(c_std)) \
-  $$(CFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CWARNFLAGS)))$(C_BUILDFLAGS)
+  $$(CFLAGS) $$(CPPFLAGS) $$(if $$(c_no_va_opt),-DNO_VA_OPT=1) $$(WARNFLAGS) \
+  $$(CWARNFLAGS)))$(C_BUILDFLAGS)
 
 override CXX_BUILDFLAGS = $(eval \
   override CXX_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(cxx_std)) \

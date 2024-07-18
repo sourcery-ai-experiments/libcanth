@@ -12,18 +12,24 @@
 #define cat2(a,b)       cat2_(a,b)
 #define cat2_(a,b)      a##b
 
+#undef arch
+#undef cpu
+#undef std
+#undef tune
+
 #if !defined(__APPLE__) || defined(__clang__) || (__GNUC__ < 12)
 # define arch() native
 # define tune() native
-#else
-# undef arch
-# undef tune
 #endif
-#undef cpu
 
 #ifndef __cplusplus
 # define lang() c
+# undef no_va_opt
+
 # ifdef __clang_major__
+#  if __clang_major__ < 12
+#   define no_va_opt() 1
+#  endif /* __clang_major__ < 12 */
 #  if __clang_major__ > 17
 #   define std() gnu23
 #  elif __clang_major__ > 8
@@ -35,7 +41,11 @@
 #  elif __clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ > 0)
 #   define std() gnu11
 #  endif /* __clang_major__ */
+
 # elif defined __GNUC__
+#  if __GNUC__ < 8
+#   define no_va_opt() 1
+#  endif /* __GNUC__ < 8 */
 #  if __GNUC__ > 13
 #   define std() gnu23
 #  elif __GNUC__ > 8
@@ -46,8 +56,10 @@
 #   define std() gnu11
 #  endif /* __GNUC__ */
 # endif /* __clang_major__ || __GNUC__ */
+
 #else /* __cplusplus */
 # define lang() cxx
+
 # ifdef __clang_major__
 #  if __clang_major__ > 16
 #   define std() gnu++23
@@ -58,6 +70,7 @@
 #  elif __clang_major__ > 4
 #   define std() gnu++2a
 #  endif /* __clang_major__ */
+
 # elif defined __GNUC__
 #  if __GNUC__ > 10
 #   define std() gnu++23
@@ -145,6 +158,14 @@ set(def(cpu),cpu())
 #else /* cpu */
 clr(def(cpu))
 #endif /* cpu */
+
+#ifndef __cplusplus
+# ifdef no_va_opt
+set(def(no_va_opt),no_va_opt())
+# else /* no_va_opt */
+clr(def(no_va_opt))
+# endif /* no_va_opt */
+#endif /* !__cplusplus */
 
 #ifdef std
 set(def(std),std())

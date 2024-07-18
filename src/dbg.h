@@ -17,9 +17,9 @@
 
 #define pr__(f_p, ...)  fprintf(f_p, "" __VA_ARGS__)
 
-#ifndef HAVE_VA_OPT
+#ifdef NO_VA_OPT
 # include "compat_dbg.h"
-#else /* HAVE_VA_OPT */
+#else /* NO_VA_OPT */
 
 /*
  * These neither prepend the calling function nor append a trailing newline.
@@ -53,7 +53,7 @@
 # define pr_errno(e, ...)   pr__strerror(err, (e) __VA_OPT__(,) __VA_ARGS__)
 # define pr_wrrno(e, ...)   pr__strerror(wrn, (e) __VA_OPT__(,) __VA_ARGS__)
 
-#endif /* HAVE_VA_OPT */
+#endif /* NO_VA_OPT */
 
 #ifdef NDEBUG
 
@@ -79,11 +79,11 @@
 
 #else /* NDEBUG */
 
-# ifdef HAVE_VA_OPT
+# ifndef NO_VA_OPT
 #  define pr_dbg_(fmt, ...) pr_(       fmt "\n" __VA_OPT__(,) __VA_ARGS__)
 #  define pr_dbg(fmt, ...)  pr_("%s:%d:%s: " fmt "\n", __FILE__, \
                                 __LINE__, __func__ __VA_OPT__(,) __VA_ARGS__)
-# endif /* HAVE_VA_OPT */
+# endif /* NO_VA_OPT */
 
 # define IF_DEBUG(...)      __VA_ARGS__
 # define IF_NDEBUG(...)
