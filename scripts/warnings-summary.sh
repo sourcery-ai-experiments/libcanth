@@ -2,31 +2,22 @@
 
 set +e
 
-get_compilers() {
-	local -a compilers=($({ compgen -c clang; compgen -c gcc; } |
-		grep -E '^(clang|gcc)(-[0-9]+(\.[0-9]+)*)?$' | sort -V -u)
-	)
-	local p x=" ${!compilers[@]}"
-	printf -vx -- "${x// / [\"%s\"]=}" "${compilers[@]}"
-	eval "local -Ai index_by_name=(${x:1})"
-	local -A name_by_path
-	for x in ${compilers[@]//*-*} ${compilers[@]%%*[^0-9]}; do
-		p=$(realpath "$(command -v "$x" 2>/dev/null)")
-		[[ -z "$p" ]] || name_by_path["$p"]="$x"
-	done
-	local -a arr
-	for x in "${name_by_path[@]}"; do
-		local -i i=${index_by_name["$x"]}
-		arr[i]="$x"
-		printf "%s\n" "${arr[i]}"
-	done
-	printf "%s\n" "${arr[@]}"
+get_lib() {
+	local d
+	d=$(dirname "$1")      &&
+	d=$(realpath -es "$d") &&
+	[[ "$d" && -d "$d/" ]] &&
+	. "$d/lib.sh"
 }
 
-compilers=("$@");
-(( ${#compilers[@]} )) || compilers=(
-  clang-{6.0,7,8,9,10,11,12,13,14,15,16,17,18,19}
-  gcc-{7,8,9,10,11,12,13,14});
+(( ${#compilers[@]} )) || {
+	if (( $# )); then
+		compilers=("$@")
+	else
+		get_lib "$0" && get_compilers &&
+		(( ${#compilers[@]} )) || exit 1
+	fi
+}
 
 declare -i ncpu=$(nproc);
 ((ncpu=ncpu<1 ?1 :ncpu));
@@ -38,8 +29,8 @@ h="${h//0/-}";
 
 e=0
 for cc_ in "${compilers[@]}"; do
-  cxx_="${cc_/#gcc/g}";
-  cxx_="${cxx_/-/++-}";
+  cxx_="${cc_##*g}";
+  cxx_="${cc_::${#cc_}-${#cxx_}}++${cxx_#cc}";
   make -j$ncpu -s -C src debug=1 CC="$cc_" CXX="$cxx_" clean >/dev/null 2>&1;
   y=$(make -j1 -s -C src debug=1 CC="$cc_" CXX="$cxx_" 2>&1              |
     grep -E "warning.+\[[-]W[^]]+\]"                                     |

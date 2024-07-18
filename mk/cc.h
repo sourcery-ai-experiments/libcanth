@@ -105,18 +105,28 @@
 # define __clang_patchlevel__() clr(v(__clang_patchlevel__))
 #endif
 
-#ifdef std
-set(def(std),std())
-#else /* std */
-clr(def(std))
-#endif /* std */
-
 __GNUC__()
 __GNUC_MINOR__()
 __GNUC_PATCHLEVEL__()
 __clang_major__()
 __clang_minor__()
 __clang_patchlevel__()
+
+#ifndef __cplusplus
+# if !defined(__clang__) && defined(__APPLE__) && (__GNUC__ > 11)
+clr(__default_arch)
+clr(__default_tune)
+# else
+set(__default_arch,native)
+set(__default_tune,native)
+# endif
+#endif
+
+#ifdef std
+set(def(std),std())
+#else /* std */
+clr(def(std))
+#endif /* std */
 
 clr(v)
 

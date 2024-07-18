@@ -6,12 +6,10 @@ include $(lastword $(MAKEFILE_LIST:cc.mk=arg.mk))
 override __default_CPPFLAGS  = $(if $(debug),,-DNDEBUG)
 override __default_WARNFLAGS = -Wall -Wextra -Wpedantic
 
-$(call arg_var,arch,native)
 $(call arg_var,CC,gcc)
 $(call arg_var,CPPFLAGS)
 $(call arg_var,cpu)
 $(call arg_var,CXX,g++)
-$(call arg_var,tune,native)
 $(call arg_var,WARNFLAGS)
 
 $(call arg_bool_var,no_color)
@@ -25,7 +23,11 @@ $(call import-macros,   \
   __clang_major__       \
   __clang_minor__       \
   __clang_patchlevel__, \
+  __default_arch        \
+  __default_tune        \
   __default_cstd)
+$(call arg_var,arch)
+$(call arg_var,tune)
 $(call arg_var,cstd)
 
 override __default_use_cclang = $(or $(use_clang),$(if $(c__clang_major__),1))
