@@ -133,23 +133,45 @@ jobs:
   build-macos-14:
     runs-on: macos-14
     steps:
-    - name: Install dependencies
+    - name: Switch to Xcode 15.4
+      run: |
+        sudo xcode-select -s /Applications/Xcode_15.4.app
+
+    - name: Install updates
       run: |
         set +e
-        alias nproc='sysctl -n hw.logicalcpu'
         echo "bash $BASH_VERSION"
         brew update
         brew upgrade
-        brew install bash binutils cjson coreutils gnu-sed llvm make
+        brew install bash
+
+    - name: Install dependencies
+      run: |
+        set +e
+        echo "bash $BASH_VERSION"
+        brew install binutils cjson coreutils gnu-sed llvm llvm@17 llvm@16 make
         if [[ -z "$HOMEBREW_PREFIX" ]]; then
           export HOMEBREW_PREFIX="$(brew --prefix)"
           echo 'export HOMEBREW_PREFIX="$(brew --prefix)"' >> "$HOME/.bash_profile"
           echo "HOMEBREW_PREFIX=$HOMEBREW_PREFIX" >> "$GITHUB_ENV"
         fi
-        export PATH="$HOMEBREW_PREFIX/opt/coreutils/libexec/gnubin:$HOMEBREW_PREFIX/opt/gnu-sed/libexec/gnubin:$HOMEBREW_PREFIX/opt/make/libexec/gnubin:$PATH"
-        echo "export PATH=\"$PATH\"" >> "$HOME/.bash_profile"
-        echo "PATH=$PATH" >> "$GITHUB_ENV"
-
+        export PATH="$(brew --prefix binutils)/bin:$HOMEBREW_PREFIX/opt/coreutils/libexec/gnubin:$HOMEBREW_PREFIX/opt/gnu-sed/libexec/gnubin:$HOMEBREW_PREFIX/opt/make/libexec/gnubin:$PATH"
+        printf '%s\n' "alias nproc='sysctl -n hw.logicalcpu'" \
+               "export PATH=\"$PATH\"" >> "$HOME/.bash_profile"
+        printf '%s\n' "PATH=$PATH" \
+               "ncpu=$(sysctl -n hw.logicalcpu)" >> "$GITHUB_ENV"
+        brew --prefix binutils
+        brew --prefix coreutils
+        brew --prefix gcc@11
+        brew --prefix gcc@12
+        brew --prefix gcc@13
+        brew --prefix gcc@14
+        brew --prefix gnu-sed
+        brew --prefix llvm@15
+        brew --prefix llvm@16
+        brew --prefix llvm@17
+        brew --prefix llvm@18
+        brew --prefix make
     - uses: actions/checkout@v4
 
     - name: Get available compilers, run warnings summary builds
@@ -157,24 +179,22 @@ jobs:
       run: |
         set +e
         uname -a
-        echo "bash $BASH_VERSION"
-        alias nproc='sysctl -n hw.logicalcpu'
         scripts/warnings-summary.sh
         . scripts/lib.sh
         get_compilers
-        printf '%s\n' "${compilers[@]}" > compilers
+        printf '%s\n' "${compilers[@]}" | tee compilers
 
     - name: GCC debug builds
       shell: bash
       run: |
         set +e
-        alias nproc='sysctl -n hw.logicalcpu'
         for _cc in $(grep '^gcc' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
           _cxx="${_cc/#gcc/g++}"
           _dir="build/dbg_$_cc"
           mkdir -p "$_dir"
-          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          make -j$ncpu -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
           (( $? == 0 )) || touch "$_dir/failed"
         done
 
@@ -182,13 +202,13 @@ jobs:
       shell: bash
       run: |
         set +e
-        alias nproc='sysctl -n hw.logicalcpu'
         for _cc in $(grep '^clang' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
           _cxx="${_cc/#clang/clang++}"
           _dir="build/dbg_$_cc"
           mkdir -p "$_dir"
-          make -j$(nproc) -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          make -j$ncpu -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
           (( $? == 0 )) || touch "$_dir/failed"
         done
 
@@ -196,13 +216,13 @@ jobs:
       shell: bash
       run: |
         set +e
-        alias nproc='sysctl -n hw.logicalcpu'
         for _cc in $(grep '^gcc' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
           _cxx="${_cc/#gcc/g++}"
           _dir="build/rel_$_cc"
           mkdir -p "$_dir"
-          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          make -j$ncpu -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
           (( $? == 0 )) || touch "$_dir/failed"
         done
 
@@ -210,13 +230,13 @@ jobs:
       shell: bash
       run: |
         set +e
-        alias nproc='sysctl -n hw.logicalcpu'
         for _cc in $(grep '^clang' compilers); do
           [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
           _cxx="${_cc/#clang/clang++}"
           _dir="build/rel_$_cc"
           mkdir -p "$_dir"
-          make -j$(nproc) -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          make -j$ncpu -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
           (( $? == 0 )) || touch "$_dir/failed"
         done
 
