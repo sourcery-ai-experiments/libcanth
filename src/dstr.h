@@ -12,14 +12,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "ligma.h"
 #include "util.h"
 
-#ifdef __clang__
-# if __clang_major__ < 10
-#  include "ligma.h"
-   diag_clang_push_ignore("-Wdocumentation-unknown-command")
-# endif /* __clang_major__ < 10 */
-#endif /* __clang_major__ < 10 */
+diag_clang(push)
+diag_clang(ignored "-Wdocumentation-unknown-command")
 
 /**
  * @brief dstr stands for dumb string.
@@ -334,10 +331,6 @@ extern void
 dstr_move (dstr *dest,
            dstr *src);
 
-#ifdef __clang__
-# if __clang_major__ < 10
-   diag_clang(pop)
-# endif /* __clang_major__ < 10 */
-#endif /* __clang_major__ < 10 */
+diag_clang(pop)
 
 #endif /* LIBCANTH_SRC_DSTR_H_ */

@@ -15,38 +15,45 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define pr__(f_p, ...)  fprintf(f_p, "" __VA_ARGS__)
+
+#ifndef HAVE_VA_OPT
+# include "compat_dbg.h"
+#else /* HAVE_VA_OPT */
+
 /*
  * These neither prepend the calling function nor append a trailing newline.
  */
-#define pr_(...)            pr__(stderr, ## __VA_ARGS__)
-#define pr_out_(...)        pr__(stdout, ## __VA_ARGS__)
-#define pr__(f_p, ...)      fprintf(f_p, "" __VA_ARGS__)
+# define pr_(...)       pr__(stderr __VA_OPT__(,) __VA_ARGS__)
+# define pr_out_(...)   pr__(stdout __VA_OPT__(,) __VA_ARGS__)
 
-#define pr__strerror(fn, e, fmt, ...) do { \
-        pr_##fn(fmt "%s%s", ## __VA_ARGS__, \
-                (fmt)[0] ? ": " : "", strerror(e)); \
+# define pr__strerror(fn, e, fmt, ...) do { \
+         pr_##fn(fmt "%s%s" __VA_OPT__(,) __VA_ARGS__, \
+                 (fmt)[0] ? ": " : "", strerror(e)); \
 } while (0)
 
 /*
  * This appends a trailing newline.
  */
-#define pr_out(fmt, ...)    pr_out_(fmt "\n", ## __VA_ARGS__)
+# define pr_out(fmt, ...)   pr_out_(fmt "\n" __VA_OPT__(,) __VA_ARGS__)
 
 /*
  * These prepend the calling function, but do not append a trailing newline.
  */
-#define pr_wrn_(fmt, ...)   pr_("warning: " fmt "\n", ## __VA_ARGS__)
-#define pr_err_(fmt, ...)   pr_(  "error: " fmt "\n", ## __VA_ARGS__)
-#define pr_errno_(e, ...)   pr__strerror(err_, (e), ## __VA_ARGS__)
-#define pr_wrrno_(e, ...)   pr__strerror(wrn_, (e), ## __VA_ARGS__)
+# define pr_wrn_(fmt, ...)  pr_("warning: " fmt "\n" __VA_OPT__(,) __VA_ARGS__)
+# define pr_err_(fmt, ...)  pr_(  "error: " fmt "\n" __VA_OPT__(,) __VA_ARGS__)
+# define pr_errno_(e, ...)  pr__strerror(err_, (e) __VA_OPT__(,) __VA_ARGS__)
+# define pr_wrrno_(e, ...)  pr__strerror(wrn_, (e) __VA_OPT__(,) __VA_ARGS__)
 
 /*
  * These prepend the calling function, and also append a trailing newline.
  */
-#define pr_wrn(fmt, ...)    pr_wrn_("%s: " fmt, __func__, ## __VA_ARGS__)
-#define pr_err(fmt, ...)    pr_err_("%s: " fmt, __func__, ## __VA_ARGS__)
-#define pr_errno(e, ...)    pr__strerror(err, (e), ## __VA_ARGS__)
-#define pr_wrrno(e, ...)    pr__strerror(wrn, (e), ## __VA_ARGS__)
+# define pr_wrn(fmt, ...)   pr_wrn_("%s: " fmt, __func__ __VA_OPT__(,) __VA_ARGS__)
+# define pr_err(fmt, ...)   pr_err_("%s: " fmt, __func__ __VA_OPT__(,) __VA_ARGS__)
+# define pr_errno(e, ...)   pr__strerror(err, (e) __VA_OPT__(,) __VA_ARGS__)
+# define pr_wrrno(e, ...)   pr__strerror(wrn, (e) __VA_OPT__(,) __VA_ARGS__)
+
+#endif /* HAVE_VA_OPT */
 
 #ifdef NDEBUG
 
@@ -72,9 +79,12 @@
 
 #else /* NDEBUG */
 
-# define pr_dbg_(fmt, ...)  pr_(       fmt "\n", ## __VA_ARGS__)
-# define pr_dbg(fmt, ...)   pr_("%s:%d:%s: " fmt "\n", __FILE__, \
-                                __LINE__, __func__, ## __VA_ARGS__)
+# ifdef HAVE_VA_OPT
+#  define pr_dbg_(fmt, ...) pr_(       fmt "\n" __VA_OPT__(,) __VA_ARGS__)
+#  define pr_dbg(fmt, ...)  pr_("%s:%d:%s: " fmt "\n", __FILE__, \
+                                __LINE__, __func__ __VA_OPT__(,) __VA_ARGS__)
+# endif /* HAVE_VA_OPT */
+
 # define IF_DEBUG(...)      __VA_ARGS__
 # define IF_NDEBUG(...)
 
