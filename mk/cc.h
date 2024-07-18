@@ -4,13 +4,25 @@
 #define set(var,...)    eval(var:=__VA_ARGS__)
 #define clr(var)        eval(undefine var)
 #define eval(...)       $(eval override __VA_ARGS__)
-#define def(var)        cat(__default_,v(var))
-#define v(...)          cat(pfx(),__VA_ARGS__)
+#define def(v)          cat(q(__default_),cat2(_,v))
+#define p(...)          cat(lang(),__VA_ARGS__)
+#define q(...)          cat(__VA_ARGS__,lang())
 #define cat(a,b)        cat_(a,b)
 #define cat_(a,b)       a##b
+#define cat2(a,b)       cat2_(a,b)
+#define cat2_(a,b)      a##b
+
+#if !defined(__APPLE__) || defined(__clang__) || (__GNUC__ < 12)
+# define arch() native
+# define tune() native
+#else
+# undef arch
+# undef tune
+#endif
+#undef cpu
 
 #ifndef __cplusplus
-# define pfx() c
+# define lang() c
 # ifdef __clang_major__
 #  if __clang_major__ > 17
 #   define std() gnu23
@@ -35,7 +47,7 @@
 #  endif /* __GNUC__ */
 # endif /* __clang_major__ || __GNUC__ */
 #else /* __cplusplus */
-# define pfx() cxx
+# define lang() cxx
 # ifdef __clang_major__
 #  if __clang_major__ > 16
 #   define std() gnu++23
@@ -57,70 +69,82 @@
 # endif /* __clang_major__ || __GNUC__ */
 #endif /* __cplusplus */
 
+#ifdef __APPLE__
+# pragma push_macro("__APPLE__")
+# undef __APPLE__
+# define __APPLE__() set(v,p(__APPLE__))_Pragma("pop_macro(\"__APPLE__\")")set($v,__APPLE__)
+__APPLE__()
+#else
+clr(p(__APPLE__))
+#endif
+
 #ifdef __GNUC__
 # pragma push_macro("__GNUC__")
 # undef __GNUC__
-# define __GNUC__() set(v,v(__GNUC__))_Pragma("pop_macro(\"__GNUC__\")")set($v,__GNUC__)
+# define __GNUC__() set(v,p(__GNUC__))_Pragma("pop_macro(\"__GNUC__\")")set($v,__GNUC__)
+__GNUC__()
 #else
-# define __GNUC__() clr(v(__GNUC__))
+clr(p(__GNUC__))
 #endif
 
 #ifdef __GNUC_MINOR__
 # pragma push_macro("__GNUC_MINOR__")
 # undef __GNUC_MINOR__
-# define __GNUC_MINOR__() set(v,v(__GNUC_MINOR__))_Pragma("pop_macro(\"__GNUC_MINOR__\")")set($v,__GNUC_MINOR__)
+# define __GNUC_MINOR__() set(v,p(__GNUC_MINOR__))_Pragma("pop_macro(\"__GNUC_MINOR__\")")set($v,__GNUC_MINOR__)
+__GNUC_MINOR__()
 #else
-# define __GNUC_MINOR__() clr(v(__GNUC_MINOR__))
+clr(p(__GNUC_MINOR__))
 #endif
 
 #ifdef __GNUC_PATCHLEVEL__
 # pragma push_macro("__GNUC_PATCHLEVEL__")
 # undef __GNUC_PATCHLEVEL__
-# define __GNUC_PATCHLEVEL__() set(v,v(__GNUC_PATCHLEVEL__))_Pragma("pop_macro(\"__GNUC_PATCHLEVEL__\")")set($v,__GNUC_PATCHLEVEL__)
+# define __GNUC_PATCHLEVEL__() set(v,p(__GNUC_PATCHLEVEL__))_Pragma("pop_macro(\"__GNUC_PATCHLEVEL__\")")set($v,__GNUC_PATCHLEVEL__)
+__GNUC_PATCHLEVEL__()
 #else
-# define __GNUC_PATCHLEVEL__() clr(v(__GNUC_PATCHLEVEL__))
+clr(p(__GNUC_PATCHLEVEL__))
 #endif
 
 #ifdef __clang_major__
 # pragma push_macro("__clang_major__")
 # undef __clang_major__
-# define __clang_major__() set(v,v(__clang_major__))_Pragma("pop_macro(\"__clang_major__\")")set($v,__clang_major__)
+# define __clang_major__() set(v,p(__clang_major__))_Pragma("pop_macro(\"__clang_major__\")")set($v,__clang_major__)
+__clang_major__()
 #else
-# define __clang_major__() clr(v(__clang_major__))
+clr(p(__clang_major__))
 #endif
 
 #ifdef __clang_minor__
 # pragma push_macro("__clang_minor__")
 # undef __clang_minor__
-# define __clang_minor__() set(v,v(__clang_minor__))_Pragma("pop_macro(\"__clang_minor__\")")set($v,__clang_minor__)
+# define __clang_minor__() set(v,p(__clang_minor__))_Pragma("pop_macro(\"__clang_minor__\")")set($v,__clang_minor__)
+__clang_minor__()
 #else
-# define __clang_minor__() clr(v(__clang_minor__))
+clr(p(__clang_minor__))
 #endif
 
 #ifdef __clang_patchlevel__
 # pragma push_macro("__clang_patchlevel__")
 # undef __clang_patchlevel__
-# define __clang_patchlevel__() set(v,v(__clang_patchlevel__))_Pragma("pop_macro(\"__clang_patchlevel__\")")set($v,__clang_patchlevel__)
-#else
-# define __clang_patchlevel__() clr(v(__clang_patchlevel__))
-#endif
-
-__GNUC__()
-__GNUC_MINOR__()
-__GNUC_PATCHLEVEL__()
-__clang_major__()
-__clang_minor__()
+# define __clang_patchlevel__() set(v,p(__clang_patchlevel__))_Pragma("pop_macro(\"__clang_patchlevel__\")")set($v,__clang_patchlevel__)
 __clang_patchlevel__()
-
-#ifndef __cplusplus
-# if !defined(__clang__) && defined(__APPLE__) && (__GNUC__ > 11)
-clr(__default_arch)
-clr(__default_tune)
-# else
-set(__default_arch,native)
-set(__default_tune,native)
-# endif
+#else
+clr(p(__clang_patchlevel__))
 #endif
+
+clr(v)
+
+#ifdef arch
+set(def(arch),arch())
+#else /* arch */
+clr(def(arch))
+#endif /* arch */
+
+#ifdef cpu
+set(def(cpu),cpu())
+#else /* cpu */
+clr(def(cpu))
+#endif /* cpu */
 
 #ifdef std
 set(def(std),std())
@@ -128,6 +152,10 @@ set(def(std),std())
 clr(def(std))
 #endif /* std */
 
-clr(v)
+#ifdef tune
+set(def(tune),tune())
+#else /* tune */
+clr(def(tune))
+#endif /* tune */
 
 #endif /* LIBCANTH_MK_CC_H_ */
