@@ -12,11 +12,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "compiler.h"
 #include "ligma.h"
-#include "util.h"
 
-diag_clang(push)
-diag_clang(ignored "-Wdocumentation-unknown-command")
+#if clang_older_than_version(10)
+ diag_clang(push)
+ diag_clang(ignored "-Wdocumentation-unknown-command")
+# if clang_older_than_version(9)
+  diag_clang(ignored "-Wmissing-braces")
+# endif /* clang_older_than_version(9) */
+#endif /* clang_older_than_version(10) */
 
 /**
  * @brief dstr stands for dumb string.
@@ -331,6 +336,8 @@ extern void
 dstr_move (dstr *dest,
            dstr *src);
 
-diag_clang(pop)
+#if clang_older_than_version(10)
+ diag_clang(pop)
+#endif /* clang_older_than_version(10) */
 
 #endif /* LIBCANTH_SRC_DSTR_H_ */
