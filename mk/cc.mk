@@ -16,7 +16,9 @@ $(call arg_var,cpu)
 $(call arg_var,std)
 $(call arg_var,tune)
 
+$(call arg_bool_var,color)
 $(call arg_bool_var,no_color)
+$(call arg_bool_var,save_temps)
 $(call arg_bool_var,use_clang)
 
 $(call import-macros,     \
@@ -112,25 +114,64 @@ override __default_no_lto = $(filter-out 11,$(use_cclang)$(use_cxxclang))
 $(call arg_bool_var,no_lto)
 $(if $(DEBUG_MK),$(info no_lto="$(no_lto)"))
 
-override __default_CFLAGS = $(if $(c_arch),-march=$(c_arch)) $(if $(c_cpu),-mcpu=$(c_cpu)) \
-  $(if $(c_tune),-mtune=$(c_tune)) -O$(if $(debug),$(if $(use_cclang),0,g) -ggdb3,2)   \
-  $(if $(no_color),,$(if $(use_cclang),-fcolor-diagnostics))                       \
-  $(if $(no_lto),,-flto=$(if $(use_cclang),full,auto)) -pipe
+override define get-buildflags
+$(strip                                 \
+  $(if $($1_std),-std=$($1_std))        \
+  $(if $($1_arch),-march=$($1_arch))    \
+  $(if $($1_cpu),-mcpu=$($1_cpu))       \
+  $(if $($1_tune),-mtune=$($1_tune))    \
+  $(if $(use_$1clang),                  \
+    $(if $(debug),                      \
+      -O0 -ggdb3,                       \
+      -O2                               \
+    )                                   \
+    $(if $(no_lto),,-flto=full)         \
+    $(if $(save_temps),-save-temps)     \
+    -pipe                               \
+    $(if $(no_color),                   \
+      $(if $(color),,                   \
+        -fno-color-diagnostics          \
+      ),                                \
+      $(if $(color),                    \
+        -fcolor-diagnostics             \
+      )                                 \
+    ),                                  \
+    $(if $(debug),                      \
+      -Og                               \
+      $(if $($1__APPLE__),              \
+        -ggdb2,                         \
+        -ggdb3                          \
+      ),                                \
+      -O2                               \
+    )                                   \
+    $(if $(no_lto),,-flto=auto)         \
+    $(if $(save_temps),                 \
+      -save-temps,                      \
+      -pipe                             \
+    )                                   \
+    $(if $(no_color),                   \
+      $(if $(color),,                   \
+        -fno-diagnostics-color          \
+      ),                                \
+      $(if $(color),                    \
+        -fdiagnostics-color             \
+      )                                 \
+    )                                   \
+  )                                     \
+)
+endef
+
+override __default_CFLAGS = $(call get-buildflags,c)
 $(call arg_var,CFLAGS)
 
-override __default_CXXFLAGS = $(if $(cxx_arch),-march=$(cxx_arch)) $(if $(cxx_cpu),-mcpu=$(cxx_cpu)) \
-  $(if $(cxx_tune),-mtune=$(cxx_tune)) -O$(if $(debug),$(if $(use_cxxclang),0,g) -ggdb3,2)   \
-  $(if $(no_color),,$(if $(use_cxxclang),-fcolor-diagnostics))                        \
-  $(if $(no_lto),,-flto=$(if $(use_cxxclang),full,auto)) -pipe
+override __default_CXXFLAGS = $(call get-buildflags,cxx)
 $(call arg_var,CXXFLAGS)
 
-override C_BUILDFLAGS = $(eval \
-  override C_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(c_std)) \
-  $$(CFLAGS) $$(CPPFLAGS) $$(if $$(c_no_va_opt),-DNO_VA_OPT=1) $$(WARNFLAGS) \
-  $$(CWARNFLAGS)))$(C_BUILDFLAGS)
+override C_BUILDFLAGS = $(eval override C_BUILDFLAGS := $$(strip \
+  $$(CFLAGS) $$(CPPFLAGS) $$(if $$(c_no_va_opt),-DNO_VA_OPT=1) \
+  $$(WARNFLAGS) $$(CWARNFLAGS)))$(C_BUILDFLAGS)
 
-override CXX_BUILDFLAGS = $(eval \
-  override CXX_BUILDFLAGS := $$(strip $$(call pfx-if,-std=,$$(cxx_std)) \
+override CXX_BUILDFLAGS = $(eval override CXX_BUILDFLAGS := $$(strip \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
 override CC_id = $(eval override CC_id := $$(strip $$(if $$(c__clang_major__),\
