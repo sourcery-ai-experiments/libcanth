@@ -46,20 +46,23 @@ override __default_use_cclang = $(or $(use_clang),$(if $(c__clang_major__),1))
 $(call arg_bool_var,use_cclang)
 $(if $(DEBUG_MK),$(info use_cclang="$(use_cclang)"))
 
-override __default_CWARNFLAGS   = \
-  $(if $(use_cclang),             \
-    -Weverything                  \
-    $(addprefix -Wno-,            \
-      c++98-compat                \
-      c++98-compat-pedantic       \
-      declaration-after-statement \
-      disabled-macro-expansion    \
-      pre-c11-compat              \
-      pre-c23-compat              \
-      pre-c2x-compat              \
-      unknown-warning-option      \
-      unsafe-buffer-usage         \
-))
+override __default_CWARNFLAGS =         \
+  $(if $(use_cclang),                   \
+    -Weverything                        \
+    $(addprefix -Wno-,                  \
+      c++98-compat                      \
+      c++98-compat-pedantic             \
+      declaration-after-statement       \
+      disabled-macro-expansion          \
+      pre-c11-compat                    \
+      pre-c23-compat                    \
+      pre-c2x-compat                    \
+      unknown-warning-option            \
+      unsafe-buffer-usage               \
+    )                                   \
+    $(if $(c__apple_build_version__),   \
+      -Wno-poison-system-directories))
+
 $(call arg_var,CWARNFLAGS)
 
 $(call import-macros,     \
@@ -86,20 +89,23 @@ override __default_use_cxxclang = $(or $(use_clang),$(if $(cxx__clang_major__),1
 $(call arg_bool_var,use_cxxclang)
 $(if $(DEBUG_MK),$(info use_cxxclang="$(use_cxxclang)"))
 
-override __default_CXXWARNFLAGS = \
-  $(if $(use_cxxclang),           \
-    -Weverything                  \
-    $(addprefix -Wno-,            \
-      c++98-compat                \
-      c++98-compat-pedantic       \
-      declaration-after-statement \
-      disabled-macro-expansion    \
-      pre-c11-compat              \
-      pre-c23-compat              \
-      pre-c2x-compat              \
-      unknown-warning-option      \
-      unsafe-buffer-usage         \
-))
+override __default_CXXWARNFLAGS =       \
+  $(if $(use_cxxclang),                 \
+    -Weverything                        \
+    $(addprefix -Wno-,                  \
+      c++98-compat                      \
+      c++98-compat-pedantic             \
+      declaration-after-statement       \
+      disabled-macro-expansion          \
+      pre-c11-compat                    \
+      pre-c23-compat                    \
+      pre-c2x-compat                    \
+      unknown-warning-option            \
+      unsafe-buffer-usage               \
+    )                                   \
+    $(if $(cxx__apple_build_version__), \
+      -Wno-poison-system-directories))
+
 $(call arg_var,CXXWARNFLAGS)
 
 override __default_no_lto = $(filter-out 11,$(use_cclang)$(use_cxxclang))

@@ -118,6 +118,15 @@ __GNUC_PATCHLEVEL__()
 clr(p(__GNUC_PATCHLEVEL__))
 #endif
 
+#ifdef __apple_build_version__
+# pragma push_macro("__apple_build_version__")
+# undef __apple_build_version__
+# define __apple_build_version__() set(v,p(__apple_build_version__))_Pragma("pop_macro(\"__apple_build_version__\")")set($v,__apple_build_version__)
+__apple_build_version__()
+#else
+clr(p(__apple_build_version__))
+#endif
+
 #ifdef __clang_major__
 # pragma push_macro("__clang_major__")
 # undef __clang_major__
