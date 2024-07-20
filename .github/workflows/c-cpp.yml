@@ -160,18 +160,7 @@ jobs:
                "export PATH=\"$PATH\"" >> "$HOME/.bash_profile"
         printf '%s\n' "PATH=$PATH" \
                "ncpu=$(sysctl -n hw.logicalcpu)" >> "$GITHUB_ENV"
-        brew --prefix binutils
-        brew --prefix coreutils
-        brew --prefix gcc@11
-        brew --prefix gcc@12
-        brew --prefix gcc@13
-        brew --prefix gcc@14
-        brew --prefix gnu-sed
-        brew --prefix llvm@15
-        brew --prefix llvm@16
-        brew --prefix llvm@17
-        brew --prefix llvm@18
-        brew --prefix make
+
     - uses: actions/checkout@v4
 
     - name: Get available compilers, run warnings summary builds

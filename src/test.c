@@ -3,6 +3,11 @@
  *
  * @author Juuso Alasuutari
  */
+#include "ligma.h"
+
+diag_apple_clang(push)
+diag_apple_clang(ignored "-Wpadded")
+
 #include <cjson/cJSON.h>
 
 #include "compiler.h"
@@ -26,3 +31,5 @@ main (int    argc,
 		cJSON_Delete(json);
 	}
 }
+
+diag_apple_clang(pop)

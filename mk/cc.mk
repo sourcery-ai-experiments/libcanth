@@ -190,12 +190,14 @@ override C_BUILDFLAGS = $(eval override C_BUILDFLAGS := $$(strip \
 override CXX_BUILDFLAGS = $(eval override CXX_BUILDFLAGS := $$(strip \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
-override CC_id = $(eval override CC_id := $$(strip $$(if $$(c__clang_major__),\
-  clang $$(c__clang_major__).$$(c__clang_minor__).$$(c__clang_patchlevel__),\
-  gcc $$(c__GNUC__).$$(c__GNUC_MINOR__).$$(c__GNUC_PATCHLEVEL__))))$(CC_id)
+override CC_id = $(eval override CC_id := $$(strip\
+  $$(if $$(c__clang_major__),$$(if $$(c__apple_build_version__),apple)\
+    clang $$(c__clang_major__).$$(c__clang_minor__).$$(c__clang_patchlevel__),\
+    gcc $$(c__GNUC__).$$(c__GNUC_MINOR__).$$(c__GNUC_PATCHLEVEL__))))$(CC_id)
 
-override CXX_id = $(eval override CXX_id := $$(strip $$(if $$(cxx__clang_major__),\
-  clang++ $$(cxx__clang_major__).$$(cxx__clang_minor__).$$(cxx__clang_patchlevel__),\
-  g++ $$(cxx__GNUC__).$$(cxx__GNUC_MINOR__).$$(cxx__GNUC_PATCHLEVEL__))))$(CXX_id)
+override CXX_id = $(eval override CXX_id := $$(strip\
+  $$(if $$(cxx__clang_major__),$$(if $$(cxx__apple_build_version__),apple)\
+    clang++ $$(cxx__clang_major__).$$(cxx__clang_minor__).$$(cxx__clang_patchlevel__),\
+    g++ $$(cxx__GNUC__).$$(cxx__GNUC_MINOR__).$$(cxx__GNUC_PATCHLEVEL__))))$(CXX_id)
 
 endif
