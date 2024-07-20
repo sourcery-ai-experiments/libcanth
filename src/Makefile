@@ -18,7 +18,8 @@ ifneq (,$(filter $(PUBLISH),$(or $(MAKECMDGOALS),all)))
 
 include $(THIS_DIR)../common.mk
 
-override SRC_test := compiler.c compiler.cpp $(if $(debug),dbg.c )dstr.c test.c
+override SRC_test := cc.c cxx.cpp dstr.c test.c
+override DBG_test := dbg.c
 override LIBS_test = $(CJSON_LIBS)
 override CFLAGS_test = $(CJSON_CFLAGS)
 

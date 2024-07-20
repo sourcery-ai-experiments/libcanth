@@ -166,7 +166,10 @@ $(eval override .O=$$(eval override .O:=$$$$(shell bash -c 'a="$$$$O";  \
   "$$$$$$$$b"'))$$(if $$(.O:./=),,$$(eval override .O:=))$$(.O)$n       \
   override undefine OBJ                                                 \
 )$(foreach t,$1,$(eval $t:| $$O$t)                                      \
-  $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o))                    \
+  $(eval override DBG_OBJ_$t := $$(DBG_$t:%=$$O%.o))                    \
+  $(eval override DBG_DEP_$t := $$(DBG_OBJ_$t:%.o=%.d))                 \
+  $(eval override OBJ_$t     := $$(SRC_$t:%=$$O%.o)                     \
+                                $$(if $$(debug),$$(DBG_OBJ_$t)))        \
   $(eval override DEP_$t     := $$(OBJ_$t:%.o=%.d))                     \
   $(eval override CC_OBJ_$t  := $$(OBJ_$t:%.cpp.o=))                    \
   $(eval override CXX_OBJ_$t := $$(OBJ_$t:%.c.o=))                      \
@@ -174,7 +177,7 @@ $(eval override .O=$$(eval override .O:=$$$$(shell bash -c 'a="$$$$O";  \
     $$(call about,$t,$$?)                                               \
     $$(call msg,LINK,$$(.O)$t)                                          \
     +$Q$$(CC) $$(C_BUILDFLAGS) $$(CFLAGS_$t) -o $$@ $$^ $$(LIBS_$t))    \
-  $(eval $$(foreach s,$$(SRC_$t),                                       \
+  $(eval $$(foreach s,$$(SRC_$t)$$(if $$(debug), $$(DBG_$t)),           \
     $$(eval $$O$$s.o: $$(THIS_DIR)$$s)))                                \
   $(if $(CC_OBJ_$t),                                                    \
     $(eval $$(CC_OBJ_$t):;                                              \
@@ -186,8 +189,10 @@ $(eval override .O=$$(eval override .O:=$$$$(shell bash -c 'a="$$$$O";  \
       $$(call about,$t,$$?)                                             \
       $$(call msg,CXX,$$(@:$$O%=$$(.O)%))                               \
       +$Q$$(CXX) $$(CXX_BUILDFLAGS) $$(CXXFLAGS_$t) -o $$@ -c -MMD $$<))\
-  $(eval clean-$t: $$(eval override WHAT_$t :=                          \
-    $$$$(wildcard $$O$t $$(OBJ_$t) $$(DEP_$t))))                        \
+  $(eval clean-$t: $$(eval override WHAT_$t := $$$$(sort $$$$(wildcard  \
+    $$O$t $$(OBJ_$t) $$(DBG_OBJ_$t) $$(DEP_$t) $$(DBG_DEP_$t)           \
+    $$(addprefix $$O*.,args.0 bc i ii lto_wrapper_args ltrans_args      \
+      ltrans0.o ltrans.o ltrans.out res s temp.o)))))                   \
   $(eval clean-$t: $$(if $$(WHAT_$t),| yeet);$$(if $$(WHAT_$t),         \
     $$(call msg,CLEAN,$$(.O)$t)$Q$$(RM) $$(WHAT_$t),$(nop)))            \
   $(eval install-$t:; $$(call msg,INSTALL,$$(.O)$t)$(nop))              \

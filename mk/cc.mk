@@ -61,6 +61,13 @@ override __default_CWARNFLAGS =         \
       pre-c2x-compat                    \
       unknown-warning-option            \
       unsafe-buffer-usage               \
+      $(if                              \
+        $(filter 0 1 2 3 4 5 6          \
+          7 8 9 10 11 12 13 14,         \
+          $(c__clang_major__)           \
+        ),,                             \
+        gnu-line-marker                 \
+      )                                 \
     )                                   \
     $(if $(c__apple_build_version__),   \
       -Wno-poison-system-directories))
@@ -104,6 +111,13 @@ override __default_CXXWARNFLAGS =       \
       pre-c2x-compat                    \
       unknown-warning-option            \
       unsafe-buffer-usage               \
+      $(if                              \
+        $(filter 0 1 2 3 4 5 6          \
+          7 8 9 10 11 12 13 14,         \
+          $(cxx__clang_major__)         \
+        ),,                             \
+        gnu-line-marker                 \
+      )                                 \
     )                                   \
     $(if $(cxx__apple_build_version__), \
       -Wno-poison-system-directories))
@@ -126,7 +140,7 @@ $(strip                                 \
       -O2                               \
     )                                   \
     $(if $(no_lto),,-flto=full)         \
-    $(if $(save_temps),-save-temps)     \
+    $(if $(save_temps),-save-temps=obj) \
     -pipe                               \
     $(if $(no_color),                   \
       $(if $(color),,                   \
@@ -146,7 +160,9 @@ $(strip                                 \
     )                                   \
     $(if $(no_lto),,-flto=auto)         \
     $(if $(save_temps),                 \
-      -save-temps,                      \
+      -save-temps$(if $(filter          \
+        0 1 2 3 4 5 6 7 8 9 10,         \
+        $($1__GNUC__)),=obj),           \
       -pipe                             \
     )                                   \
     $(if $(no_color),                   \
