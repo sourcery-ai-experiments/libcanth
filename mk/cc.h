@@ -118,6 +118,42 @@ __GNUC_PATCHLEVEL__()
 clr(p(__GNUC_PATCHLEVEL__))
 #endif
 
+#ifdef __INTEL_COMPILER
+# pragma push_macro("__INTEL_COMPILER")
+# undef __INTEL_COMPILER
+# define __INTEL_COMPILER() set(v,p(__INTEL_COMPILER))_Pragma("pop_macro(\"__INTEL_COMPILER\")")set($v,__INTEL_COMPILER)
+__INTEL_COMPILER()
+#else
+clr(p(__INTEL_COMPILER))
+#endif
+
+#ifdef __INTEL_COMPILER_UPDATE
+# pragma push_macro("__INTEL_COMPILER_UPDATE")
+# undef __INTEL_COMPILER_UPDATE
+# define __INTEL_COMPILER_UPDATE() set(v,p(__INTEL_COMPILER_UPDATE))_Pragma("pop_macro(\"__INTEL_COMPILER_UPDATE\")")set($v,__INTEL_COMPILER_UPDATE)
+__INTEL_COMPILER_UPDATE()
+#else
+clr(p(__INTEL_COMPILER_UPDATE))
+#endif
+
+#ifdef __INTEL_LLVM_COMPILER
+# pragma push_macro("__INTEL_LLVM_COMPILER")
+# undef __INTEL_LLVM_COMPILER
+# define __INTEL_LLVM_COMPILER() set(v,p(__INTEL_LLVM_COMPILER))_Pragma("pop_macro(\"__INTEL_LLVM_COMPILER\")")set($v,__INTEL_LLVM_COMPILER)
+__INTEL_LLVM_COMPILER()
+#else
+clr(p(__INTEL_LLVM_COMPILER))
+#endif
+
+#ifdef __VERSION__
+# pragma push_macro("__VERSION__")
+# undef __VERSION__
+# define __VERSION__() set(v,p(__VERSION__))_Pragma("pop_macro(\"__VERSION__\")")set($v,__VERSION__)
+__VERSION__()
+#else
+clr(p(__VERSION__))
+#endif
+
 #ifdef __apple_build_version__
 # pragma push_macro("__apple_build_version__")
 # undef __apple_build_version__
@@ -152,6 +188,15 @@ clr(p(__clang_minor__))
 __clang_patchlevel__()
 #else
 clr(p(__clang_patchlevel__))
+#endif
+
+#ifdef __clang_version__
+# pragma push_macro("__clang_version__")
+# undef __clang_version__
+# define __clang_version__() set(v,p(__clang_version__))_Pragma("pop_macro(\"__clang_version__\")")set($v,__clang_version__)
+__clang_version__()
+#else
+clr(p(__clang_version__))
 #endif
 
 clr(v)

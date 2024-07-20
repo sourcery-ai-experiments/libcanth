@@ -154,9 +154,9 @@ $(eval override .get-$(strip $1)-$(macro_header) = $$(eval \
   $$(call get-macro-header,$(macro_header),$2)override undefine .get-$(strip $1)-$(macro_header)))
 endef
 
-override about = $(if $(strip $2),$(call .about,$(call  join-2, / ,$(if \
-                 $(strip $(CC_OBJ_$(strip $1))),$(strip $(CC_id))),$(if \
-                 $(strip $(CXX_OBJ_$(strip $1))),$(strip $(CXX_id))))))
+override about = $(if $(strip $2),$(call .about,$(if            \
+                 $(strip $(CC_OBJ_$(strip $1))),$(CC_id)),$(if  \
+                 $(strip $(CXX_OBJ_$(strip $1))),$(CXX_id))))
 
 # Generate rules and dependencies.
 override define target_rules

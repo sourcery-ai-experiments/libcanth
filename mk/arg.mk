@@ -25,10 +25,14 @@ endif
 
 ifeq (,$Q)
   override SGR      = $(shell printf '\e[$1m%s\e[m' '$2')
-  override fyi      = $(info $($1_pfx)$2)
+  override fyi      = $(if $2,$(info $($1_pfx)$2))
   override .fyi     = $(call pfx-if,$w$w$w$w,$(strip $1))
-  override fyi-once = $(eval override $1=$$(if $$(filter undefined,$$(origin \
-    $1)),,$$(eval override undefine $1)$$(call fyi,INFO,$$(call .fyi,$$1))))
+  override two-info = $(eval override $1 = \
+    $$(if                                  \
+      $$(filter undefined,$$(origin $1)),, \
+      $$(eval override undefine $1)$$(call \
+        fyi,INFO,$$(call .fyi,$$1))$$(call \
+        fyi,INFO,$$(call .fyi,$$2))))
 
   override CLEAN_pfx   = $(eval override CLEAN_pfx   := $$(call SGR,0;35,CLEAN   ))$(CLEAN_pfx)
   override CC_pfx      = $(eval override CC_pfx      := $$(call SGR,0;36,CC      ))$(CC_pfx)
@@ -40,7 +44,7 @@ ifeq (,$Q)
   override SYMLINK_pfx = $(eval override SYMLINK_pfx := $$(call SGR,0;32,SYMLINK ))$(SYMLINK_pfx)
   override YEET_pfx    = $(eval override YEET_pfx    := $$(call SGR,38;5;191,YEET))$(YEET_pfx)
 else
-  override undefine fyi-once
+  override undefine two-info
   override undefine .fyi
   override undefine fyi
 endif

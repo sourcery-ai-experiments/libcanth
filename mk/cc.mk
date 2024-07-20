@@ -27,10 +27,16 @@ $(call import-macros,     \
   __GNUC__                \
   __GNUC_MINOR__          \
   __GNUC_PATCHLEVEL__     \
+  __INTEL_COMPILER        \
+  __INTEL_COMPILER_UPDATE \
+  __INTEL_LLVM_COMPILER   \
+  __VERSION__             \
   __apple_build_version__ \
   __clang_major__         \
   __clang_minor__         \
-  __clang_patchlevel__,   \
+  __clang_patchlevel__    \
+  __clang_version__       \
+  ,                       \
   __default_c_arch        \
   __default_c_cpu         \
   __default_c_std         \
@@ -80,10 +86,16 @@ $(call import-macros,     \
   __GNUC__                \
   __GNUC_MINOR__          \
   __GNUC_PATCHLEVEL__     \
+  __INTEL_COMPILER        \
+  __INTEL_COMPILER_UPDATE \
+  __INTEL_LLVM_COMPILER   \
+  __VERSION__             \
   __apple_build_version__ \
   __clang_major__         \
   __clang_minor__         \
-  __clang_patchlevel__,   \
+  __clang_patchlevel__    \
+  __clang_version__       \
+  ,                       \
   __default_cxx_arch      \
   __default_cxx_cpu       \
   __default_cxx_std       \
@@ -190,14 +202,15 @@ override C_BUILDFLAGS = $(eval override C_BUILDFLAGS := $$(strip \
 override CXX_BUILDFLAGS = $(eval override CXX_BUILDFLAGS := $$(strip \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
-override CC_id = $(eval override CC_id := $$(strip\
-  $$(if $$(c__clang_major__),$$(if $$(c__apple_build_version__),apple)\
-    clang $$(c__clang_major__).$$(c__clang_minor__).$$(c__clang_patchlevel__),\
-    gcc $$(c__GNUC__).$$(c__GNUC_MINOR__).$$(c__GNUC_PATCHLEVEL__))))$(CC_id)
+override compiler-id = $(CSI)1;30m[$(CSI)0;36mC$(if \
+$(1:c=),++,$w$(CSI)m$w)$(CSI)1;30m]$(CSI)0;32m      \
+$(strip $(subst ",,                                 \
+  $(if $($1__clang_version__),                      \
+    $(if $($1__apple_build_version__),Apple)        \
+    clang$(if $(1:c=),++) $($1__clang_version__)    \
+    ,g$(if $(1:c=),++,cc) $($1__VERSION__))))$(CSI)m
 
-override CXX_id = $(eval override CXX_id := $$(strip\
-  $$(if $$(cxx__clang_major__),$$(if $$(cxx__apple_build_version__),apple)\
-    clang++ $$(cxx__clang_major__).$$(cxx__clang_minor__).$$(cxx__clang_patchlevel__),\
-    g++ $$(cxx__GNUC__).$$(cxx__GNUC_MINOR__).$$(cxx__GNUC_PATCHLEVEL__))))$(CXX_id)
+override CC_id = $(eval override CC_id := $$(call compiler-id,c))$(CC_id)
+override CXX_id = $(eval override CXX_id := $$(call compiler-id,cxx))$(CXX_id)
 
 endif
