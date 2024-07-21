@@ -202,13 +202,13 @@ override C_BUILDFLAGS = $(eval override C_BUILDFLAGS := $$(strip \
 override CXX_BUILDFLAGS = $(eval override CXX_BUILDFLAGS := $$(strip \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
 
-override compiler-id = $(CSI)1;30m[$(CSI)0;36mC$(if \
-$(1:c=),++,$w$(CSI)m$w)$(CSI)1;30m]$(CSI)0;32m      \
+override compiler-id = $(CSI)0;34m[$(CSI)0;33mC$(if \
+$(1:c=),++,$w$(CSI)m$w)$(CSI)0;34m]$(CSI)0;32m      \
 $(strip $(subst ",,                                 \
   $(if $($1__clang_version__),                      \
     $(if $($1__apple_build_version__),Apple)        \
-    clang$(if $(1:c=),++) $($1__clang_version__)    \
-    ,g$(if $(1:c=),++,cc) $($1__VERSION__))))$(CSI)m
+    Clang $(CSI)0;36m$($1__clang_version__),        \
+    GCC $(CSI)0;36m$($1__VERSION__))))$(CSI)m
 
 override CC_id = $(eval override CC_id := $$(call compiler-id,c))$(CC_id)
 override CXX_id = $(eval override CXX_id := $$(call compiler-id,cxx))$(CXX_id)

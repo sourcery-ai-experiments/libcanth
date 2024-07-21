@@ -47,7 +47,7 @@ jobs:
         scripts/warnings-summary.sh
         . scripts/lib.sh
         get_compilers
-        printf '%s\n' "${compilers[@]}" > compilers
+        printf '%s\n' "${compilers[@]}" | tee compilers
 
     - name: GCC debug builds
       run: |
@@ -115,8 +115,9 @@ jobs:
         fi
         if (( p )); then
           echo 'Running tests...'
+          echo '{}' > test.json
           for x in "${b[@]}"; do
-            y=$("$x" 2>&1)
+            y=$("$x" test.json 2>&1)
             (( n += $? != 0 ))
             x="${x#build/}"
             printf -vx -- '%-13s|' "${x%/test}"
@@ -247,8 +248,9 @@ jobs:
         fi
         if (( p )); then
           echo 'Running tests...'
+          echo '{}' > test.json
           for x in "${b[@]}"; do
-            y=$("$x" 2>&1)
+            y=$("$x" test.json 2>&1)
             (( n += $? != 0 ))
             x="${x#build/}"
             printf -vx -- '%-13s|' "${x%/test}"

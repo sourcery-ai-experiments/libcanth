@@ -10,26 +10,67 @@ diag_apple_clang(ignored "-Wpadded")
 
 #include <cjson/cJSON.h>
 
+diag_apple_clang(pop)
+
 #include "compiler.h"
 #include "dbg.h"
 #include "dstr.h"
+#include "file.h"
+
+#if clang_older_than_version(19) \
+ && clang_newer_than_version(11)
+diag_clang(push)
+diag_clang(ignored "-Wgnu-zero-variadic-macro-arguments")
+#endif /* clang < 19 && clang > 11 */
 
 int
 main (int    argc,
       char **argv)
 {
+	int ret = EXIT_SUCCESS;
 	pr_out("%s / %s", canth_c_version(), canth_cxx_version());
 
 	for (int i = 0; ++i < argc;) {
-		cJSON *json = cJSON_Parse(argv[i]);
-		if (!json) {
-			const char *s = cJSON_GetErrorPtr();
-			if (s)
-				pr_err("cJSON_Parse: before: %s", s);
+		struct file_in f = file_read(argv[i]);
+		int e = file_error(&f);
+		if (e) {
+			pr_errno(e, "file_read");
+			ret = EXIT_FAILURE;
 			continue;
 		}
-		cJSON_Delete(json);
+		char const *txt = file_text(&f);
+		cJSON *json = cJSON_Parse(txt);
+		if (!json) {
+			pr_err_("parsing failed");
+			ret = EXIT_FAILURE;
+			char const *s = cJSON_GetErrorPtr();
+			if (s) {
+				char const *p = s;
+				for (char const *q = p; q-- > txt &&
+				     *q != '\n' && *q != '\r'; p = q);
+				size_t b = (size_t)(ptrdiff_t)(s - p);
+				size_t n = b + strcspn(s, "\n\r");
+				if (n) {
+					pr_("%.*s\n", (int)n, p);
+					if (b) {
+						for (; --b; ++p) {
+							fputc(*p == '\t' ? '\t' : ' ', stderr);
+						}
+					}
+					fputs("^\n", stderr);
+				}
+			}
+		} else {
+			cJSON_Delete(json);
+		}
+
+		file_in_fini(&f);
 	}
+
+	return ret;
 }
 
-diag_apple_clang(pop)
+#if clang_older_than_version(19) \
+ && clang_newer_than_version(11)
+diag_clang(pop)
+#endif /* clang < 19 && clang > 11 */
