@@ -27,9 +27,9 @@
 # define pr_(...)       pr__(stderr __VA_OPT__(,) __VA_ARGS__)
 # define pr_out_(...)   pr__(stdout __VA_OPT__(,) __VA_ARGS__)
 
-# define pr__strerror(fn, e, fmt, ...) do { \
-         pr_##fn(fmt "%s%s" __VA_OPT__(,) __VA_ARGS__, \
-                 (fmt)[0] ? ": " : "", strerror(e)); \
+# define pr__strerror(fn, e, fmt, ...) do {           \
+         pr_##fn(fmt "%s%s" __VA_OPT__(,) __VA_ARGS__ \
+                 , &"\0: "[!!(fmt)[0]], strerror(e)); \
 } while (0)
 
 /*

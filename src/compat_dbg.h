@@ -13,9 +13,9 @@ diag_clang(ignored "-Wgnu-zero-variadic-macro-arguments")
 
 #define pr_(...)            pr__(stderr, ## __VA_ARGS__)
 #define pr_out_(...)        pr__(stdout, ## __VA_ARGS__)
-#define pr__strerror(fn, e, fmt, ...) do { \
-        pr_##fn(fmt "%s%s", ## __VA_ARGS__, \
-                (fmt)[0] ? ": " : "", strerror(e)); \
+#define pr__strerror(fn, e, fmt, ...) do {         \
+        pr_##fn(fmt "%s%s", ## __VA_ARGS__,        \
+                &"\0: "[!!(fmt)[0]], strerror(e)); \
 } while (0)
 #define pr_out(fmt, ...)    pr_out_(fmt "\n", ## __VA_ARGS__)
 #define pr_wrn_(fmt, ...)   pr_("warning: " fmt "\n", ## __VA_ARGS__)

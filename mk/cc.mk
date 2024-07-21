@@ -189,6 +189,10 @@ $(strip                                 \
 )
 endef
 
+override filter-c-warnflags = $(filter-out \
+  $(if $(use_cclang),,$(if $(filter 0 1 2  \
+  3 4 5 6 7,$(c__GNUC__)),-Wpedantic)),$1)
+
 override __default_CFLAGS = $(call get-buildflags,c)
 $(call arg_var,CFLAGS)
 
@@ -197,7 +201,7 @@ $(call arg_var,CXXFLAGS)
 
 override C_BUILDFLAGS = $(eval override C_BUILDFLAGS := $$(strip \
   $$(CFLAGS) $$(CPPFLAGS) $$(if $$(c_no_va_opt),-DNO_VA_OPT=1) \
-  $$(WARNFLAGS) $$(CWARNFLAGS)))$(C_BUILDFLAGS)
+  $$(call filter-c-warnflags,$$(WARNFLAGS) $$(CWARNFLAGS))))$(C_BUILDFLAGS)
 
 override CXX_BUILDFLAGS = $(eval override CXX_BUILDFLAGS := $$(strip \
   $$(CXXFLAGS) $$(CPPFLAGS) $$(WARNFLAGS) $$(CXXWARNFLAGS)))$(CXX_BUILDFLAGS)
