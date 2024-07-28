@@ -25,14 +25,6 @@
 
 #ifndef __cplusplus
 
-#ifdef __clang_major__
-# if __clang_major__ < 19
-#  define constexpr __attribute__((const))
-# endif
-#elif __GNUC__ < 13
-# define constexpr __attribute__((const))
-#endif
-
 /** @brief Check if a value is a char array.
  */
 #define is_char_array(x) _Generic((typeof(x) *){0}, \
