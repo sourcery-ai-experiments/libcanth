@@ -36,4 +36,8 @@
 # endif /* clang < 19 || gcc < 13.1 */
 #endif /* !__cplusplus */
 
+#ifndef __has_builtin
+# define __has_builtin(x) 0
+#endif /* !__has_builtin */
+
 #endif /* LIBCANTH_SRC_COMPAT_H_ */
