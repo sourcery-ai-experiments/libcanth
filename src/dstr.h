@@ -14,6 +14,7 @@
 
 #include "compiler.h"
 #include "ligma.h"
+#include "util.h"
 
 #if clang_older_than_version(10)
  diag_clang(push)
