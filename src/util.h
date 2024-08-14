@@ -35,6 +35,25 @@
 
 #ifndef __cplusplus
 
+/**
+ * @brief Check if an integer value is negative without getting warning
+ *        spam if the type of the value is unsigned.
+ *
+ * If `x` is an unsigned integer type the macro expands to what should
+ * be a compile-time constant expression 0, otherwise to `x < 0`. In
+ * the latter case `x` is assumed to be a signed integer.
+ *
+ * @note The `_Generic` expression used to implement this macro only has
+ *       explicit cases for the old school C unsigned integer types and
+ *       a default case for everything else.
+ *
+ * @param x An integral-typed value.
+ */
+#define is_negative(x) (_Generic((x), \
+        default:(x), unsigned char:1, \
+        unsigned short:1, unsigned:1, \
+        typeof(1UL):1,typeof(1ULL):1) < (typeof(x))0)
+
 /** @brief Check if a value is a char array.
  */
 #define is_char_array(x) _Generic((typeof(x) *){0}, \
