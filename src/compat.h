@@ -10,11 +10,12 @@
 
 #ifndef __cplusplus
 
-# if clang_older_than_version(16) \
+# if (__STDC_VERSION__ < 202000L) \
+  || clang_older_than_version(16) \
   || gcc_older_than_version(13,1)
 #  include <stddef.h>
 #  define nullptr NULL
-# endif /* clang < 16 || gcc < 13.1 */
+# endif /* __STDC_VERSION__ < 202000L || clang < 16 || gcc < 13.1 */
 
 # if clang_older_than_version(8)  \
   || gcc_older_than_version(13,1) \
