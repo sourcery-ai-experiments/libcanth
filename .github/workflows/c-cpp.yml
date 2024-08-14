@@ -150,7 +150,7 @@ jobs:
       run: |
         set +e
         echo "bash $BASH_VERSION"
-        brew install binutils cjson coreutils gnu-sed llvm llvm@17 llvm@16 make
+        brew install binutils cjson coreutils gnu-sed make
         if [[ -z "$HOMEBREW_PREFIX" ]]; then
           export HOMEBREW_PREFIX="$(brew --prefix)"
           echo 'export HOMEBREW_PREFIX="$(brew --prefix)"' >> "$HOME/.bash_profile"
