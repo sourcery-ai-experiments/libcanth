@@ -34,11 +34,12 @@
 #  define fixed_enum(name, T) enum name : T
 # endif /* clang < 8 || gcc < 13.1 || __INTELLISENSE__ */
 
-# if clang_older_than_version(19) \
+# if (__STDC_VERSION__ < 202000L) \
+  || clang_older_than_version(19) \
   || gcc_older_than_version(13,1) \
   || defined(__INTELLISENSE__)
 #  define constexpr
-# endif /* clang < 19 || gcc < 13.1 || __INTELLISENSE__ */
+# endif /* __STDC_VERSION__ < 202000L || clang < 19 || gcc < 13.1 || __INTELLISENSE__ */
 #endif /* !__cplusplus */
 
 #ifndef __has_builtin
