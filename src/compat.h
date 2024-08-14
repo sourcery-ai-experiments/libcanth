@@ -12,10 +12,11 @@
 
 # if (__STDC_VERSION__ < 202000L) \
   || clang_older_than_version(16) \
-  || gcc_older_than_version(13,1)
+  || gcc_older_than_version(13,1) \
+  || defined(__INTELLISENSE__)
 #  include <stddef.h>
 #  define nullptr NULL
-# endif /* __STDC_VERSION__ < 202000L || clang < 16 || gcc < 13.1 */
+# endif /* __STDC_VERSION__ < 202000L || clang < 16 || gcc < 13.1 || __INTELLISENSE__ */
 
 # if clang_older_than_version(8)  \
   || gcc_older_than_version(13,1) \
