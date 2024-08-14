@@ -8,6 +8,21 @@
 
 #include "compat.h"
 
+#define maybe_parenthesize(...) arg0_if_no_args(naught,__VA_ARGS__)(__VA_ARGS__)
+
+#ifdef NO_VA_OPT
+# include "ligma.h"
+diag_clang(push)
+diag_clang(ignored "-Wgnu-zero-variadic-macro-arguments")
+# define arg0_if_no_args(a,...) arg0_if_no_args_(, ##__VA_ARGS__ a,)
+diag_clang(pop)
+#else
+# define arg0_if_no_args(a,...) arg0_if_no_args_(__VA_OPT__(,) a,)
+#endif
+#define arg0_if_no_args_(a,...) a
+
+#define naught(...)
+
 /** @brief Instruct the compiler to always inline a function.
  */
 #define force_inline __attribute__((always_inline)) inline
@@ -21,6 +36,11 @@
 /** @brief Function returns a specific baked-in data pointer.
  */
 #define const_nonnull __attribute__((const,returns_nonnull))
+
+/** @brief Assume that the specified argument indices are not null.
+ */
+#define nonnull_in(...) __attribute__(( \
+        nonnull maybe_parenthesize(__VA_ARGS__)))
 
 /** @brief Suppress compiler warnings about an unused entity.
  */
