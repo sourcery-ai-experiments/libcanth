@@ -37,7 +37,7 @@
 # if clang_older_than_version(19) \
   || gcc_older_than_version(13,1) \
   || defined(__INTELLISENSE__)
-#  define constexpr __attribute__((const))
+#  define constexpr
 # endif /* clang < 19 || gcc < 13.1 || __INTELLISENSE__ */
 #endif /* !__cplusplus */
 
