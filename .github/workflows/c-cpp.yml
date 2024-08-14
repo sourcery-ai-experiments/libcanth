@@ -7,6 +7,177 @@ on:
     branches: [ "main" ]
 
 jobs:
+  build-ubuntu-22_04:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Upgrade packages
+      run: |
+        sudo apt-get update
+        sudo apt-get upgrade -y
+
+    - name: Install libcanth dependencies
+      run: |
+        sudo apt-get install libcjson-dev
+        echo "ncpu=$((n = $(nproc)+0, n > 0 ? n : 1))" >> "$GITHUB_ENV"
+
+    - name: Install Clang 11 and 12
+      run: |
+        sudo apt-get install clang-{11,12} llvm-{11,12}-{dev,linker-tools}
+
+    - name: Add Ubuntu 20.04 repo (Clang 6.0 through 10, GCC 7, and GCC 8)
+      run: |
+        printf 'deb http://archive.ubuntu.com/ubuntu/ %s main restricted universe multiverse\n' focal{,-{updates,security,backports}} | sudo tee /etc/apt/sources.list.d/focal.list
+        sudo apt-get update
+
+    - name: Install Clang 6 through 10, GCC 7, and GCC 8
+      run: |
+        sudo apt-get install clang-{6.0,7,8,9,10} g{cc,++}-{7,8} llvm-{6.0,7,8,9,10}-dev
+
+    - uses: actions/checkout@v4
+
+    - name: Get available compilers, run warnings summary builds
+      run: |
+        set +e
+        uname -a
+        printf -- '\n+---------+\n|compilers|\n+---------+\n'
+        . scripts/lib.sh
+        get_compilers
+        declare -a cc_clang cc_gcc
+        declare -A cc_v
+        for _cc in "${compilers[@]}"; do
+          v=$("$_cc" --version 2>&1 | head -1)
+          case "$_cc" in
+          clang*)
+            cc_clang+=("$_cc") ;;
+          gcc*)
+            [[ ! "$v" =~ clang ]] || continue
+            cc_gcc+=("$_cc") ;;
+          esac
+          cc_v["$_cc"]="$v"
+        done
+        n=$(printf '%s\n' "${cc_v[@]}" | wc -L)
+        for _cc in "${cc_clang[@]}"; do
+          printf "%-${n}s\t%s\n" "${cc_v[$_cc]}" "$_cc"
+        done | tee compilers_clang
+        for _cc in "${cc_gcc[@]}"; do
+          printf "%-${n}s\t%s\n" "${cc_v[$_cc]}" "$_cc"
+        done | tee compilers_gcc
+        echo
+        unset compilers
+        scripts/warnings-summary.sh "${cc_clang[@]}" "${cc_gcc[@]}"
+
+    - name: GCC debug builds
+      shell: bash
+      run: |
+        set +e
+        for _cc in $(cut -f2 compilers_gcc); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
+          _cxx="${_cc/#gcc/g++}"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$ncpu -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: Clang debug builds
+      shell: bash
+      run: |
+        set +e
+        for _cc in $(cut -f2 compilers_clang); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
+          _cxx="${_cc/#clang/clang++}"
+          _dir="build/dbg_$_cc"
+          mkdir -p "$_dir"
+          make -j$ncpu -C src O="../$_dir" debug=1 CC="$_cc" CXX="$_cxx"
+          ret=$?
+          if (( ret == 139 )); then
+            fmt='\n\e[1m\e[33mIgnoring SIGSEGV during %s build.\e[m\n\n'
+            fmt+='\e[33mThere is a known problem of unknown cause where\e[m\n'
+            fmt+='\e[33msome Clang builds on GitHub'"'"'s Ubuntu runners\e[m\n'
+            fmt+='\e[33msegfault during make.\e[m\n'
+            fmt+='\n\e[33mDropping %s from the test report.\e[m\n'
+            printf "$fmt" "${_dir##*/}" "${_dir##*/}"
+            rm -rf "$_dir"
+            ret=0
+          fi
+          (( ret == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: GCC release builds
+      shell: bash
+      run: |
+        set +e
+        for _cc in $(cut -f2 compilers_gcc); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
+          _cxx="${_cc/#gcc/g++}"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$ncpu -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          (( $? == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: Clang release builds
+      shell: bash
+      run: |
+        set +e
+        for _cc in $(cut -f2 compilers_clang); do
+          [[ -z "$_cxx" ]] || printf '\n\n========================================\n'
+          "$_cc" --version
+          _cxx="${_cc/#clang/clang++}"
+          _dir="build/rel_$_cc"
+          mkdir -p "$_dir"
+          make -j$ncpu -C src O="../$_dir" CC="$_cc" CXX="$_cxx"
+          ret=$?
+          if (( ret == 139 )); then
+            fmt='\n\e[1m\e[33mIgnoring SIGSEGV during %s build.\e[m\n\n'
+            fmt+='\e[33mThere is a known problem of unknown cause where\e[m\n'
+            fmt+='\e[33msome Clang builds on GitHub'"'"'s Ubuntu runners\e[m\n'
+            fmt+='\e[33msegfault during make.\e[m\n'
+            fmt+='\n\e[33mDropping %s from the test report.\e[m\n'
+            printf "$fmt" "${_dir##*/}" "${_dir##*/}"
+            rm -rf "$_dir"
+            ret=0
+          fi
+          (( ret == 0 )) || touch "$_dir/failed"
+        done
+
+    - name: Report
+      run: |
+        set +e
+        shopt -s nullglob
+        a=($(printf '%s\n' build/*/failed | grep -Ev '^[[:blank:]]*$' | sort -V -r))
+        b=($(printf '%s\n' build/*/test   | grep -Ev '^[[:blank:]]*$' | sort -V -r))
+        c=($(printf '%s\n' build/*/       | grep -Ev '^[[:blank:]]*$' | sort -V -r))
+        declare -i m=${#a[@]} n=0 p=${#b[@]} q=${#c[@]}
+        x="$m/$q build failure"
+        (( m == 1 )) || x+='s'
+        (( m == 0 )) || x+=':'
+        echo "$x"
+        if (( m )); then
+          a=("${a[@]%/failed}")
+          printf '%s\n' "${a[@]/#build\//- }"
+        fi
+        if (( p )); then
+          echo 'Running tests...'
+          echo '{}' > test.json
+          for x in "${b[@]}"; do
+            y=$("$x" test.json 2>&1)
+            (( n += $? != 0 ))
+            x="${x#build/}"
+            printf -vx -- '%-13s|' "${x%/test}"
+            echo "$y" | sed "s,^,$x ,"
+          done
+          x="$n/$p test failure"
+          (( n == 1 )) || x+='s'
+          echo "$x"
+        fi
+        ((p = q - m - n))
+        echo "$p/$q in the green"
+        (( p == q ))
+
   build-ubuntu-24_04:
     runs-on: ubuntu-24.04
     steps:
