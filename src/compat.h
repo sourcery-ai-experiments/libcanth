@@ -51,6 +51,13 @@
 #  define typeof __typeof__
 # endif /* clang < 16 */
 
+# ifndef NO_VA_OPT
+#  if clang_older_than_version(12) \
+   || gcc_older_than_version(8)
+#   define NO_VA_OPT 1
+#  endif /* clang < 12 || gcc < 8 */
+# endif /* !NO_VA_OPT */
+
 #endif /* !__cplusplus */
 
 #ifndef __has_builtin
