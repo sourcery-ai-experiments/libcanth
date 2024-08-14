@@ -11,6 +11,12 @@
 #ifndef __cplusplus
 
 # if (__STDC_VERSION__ < 202000L) \
+  || clang_older_than_version(15) \
+  || gcc_older_than_version(13,1)
+#  include <stdbool.h>
+# endif /* __STDC_VERSION__ < 202000L || clang < 15 || gcc < 13.1 */
+
+# if (__STDC_VERSION__ < 202000L) \
   || clang_older_than_version(16) \
   || gcc_older_than_version(13,1) \
   || defined(__INTELLISENSE__)
