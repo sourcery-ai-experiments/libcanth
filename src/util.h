@@ -42,6 +42,10 @@ diag_clang(pop)
 #define nonnull_in(...) __attribute__(( \
         nonnull maybe_parenthesize(__VA_ARGS__)))
 
+/** @brief Assume that the return value of a function is not null.
+ */
+#define nonnull_out __attribute__((returns_nonnull))
+
 /** @brief Suppress compiler warnings about an unused entity.
  */
 #define useless __attribute__((unused))
