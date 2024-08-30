@@ -3,29 +3,25 @@
  *
  * @author Juuso Alasuutari
  */
-#include <errno.h>
-#include <inttypes.h>
+#ifndef LIBCANTH_SRC_UCP_H_
+#define LIBCANTH_SRC_UCP_H_
+
+#include <limits.h>
 
 #include "util.h"
 
 /**
- * @brief Unicode code point encoding.
- *
- * These serve a dual purpose: they act as identifiers for different
- * encodings, and their enumeration values themselves are defined as
- * something relevant to that specific encoding. `UCP_UTF8_*` values
- * are the number of bytes when encoding as UTF-8, `UCP_UTF32_*` the
- * maximum amount of data bits the corresponding code points use.
+ * @brief Unicode code point encoding kind.
  */
 fixed_enum(ucp_kind, uint8_t) {
-	UCP_UTF8_1   =  1, //!< UTF-8 encoding, 1 byte
-	UCP_UTF8_2   =  2, //!< UTF-8 encoding, 2 bytes
-	UCP_UTF8_3   =  3, //!< UTF-8 encoding, 3 bytes
-	UCP_UTF8_4   =  4, //!< UTF-8 encoding, 4 bytes
-	UCP_UTF32_7  =  7, //!< 1-byte UTF-8 as UTF-32
-	UCP_UTF32_11 = 11, //!< 2-byte UTF-8 as UTF-32
-	UCP_UTF32_16 = 16, //!< 3-byte UTF-8 as UTF-32
-	UCP_UTF32_21 = 21  //!< 4-byte UTF-8 as UTF-32
+	UCP_UTF8_1   =  1, //!< UTF-8, 1 byte (ASCII)
+	UCP_UTF8_2   =  2, //!< UTF-8, 2-byte sequence
+	UCP_UTF8_3   =  3, //!< UTF-8, 3-byte sequence
+	UCP_UTF8_4   =  4, //!< UTF-8, 4-byte sequence
+	UCP_UTF32_7  =  7, //!< UTF-32, at most 7 bits
+	UCP_UTF32_11 = 11, //!< UTF-32, 8 to 11 bits
+	UCP_UTF32_16 = 16, //!< UTF-32, 12 to 16 bits
+	UCP_UTF32_21 = 21  //!< UTF-32, 17 to 21 bits
 };
 
 /**
@@ -114,6 +110,7 @@ struct ucp_utf8_4 {
  * @brief Map of UTF-8 to UTF-32.
  */
 union ucp_utf8 {
+	uint8_t           u8[4U]; //!< Raw octets.
 	struct ucp_utf8_1 utf8_1; //!< 1-byte UTF-8.
 	struct ucp_utf8_2 utf8_2; //!< 2-byte UTF-8.
 	struct ucp_utf8_3 utf8_3; //!< 3-byte UTF-8.
@@ -124,6 +121,7 @@ union ucp_utf8 {
  * @brief Map of UTF-32 to UTF-8.
  */
 union ucp_utf32 {
+	uint32_t            u32;      //!< Raw 32 bits.
 	struct ucp_utf32_7  utf32_7;  //!< 7-bit UTF-32.
 	struct ucp_utf32_11 utf32_11; //!< 11-bit UTF-32.
 	struct ucp_utf32_16 utf32_16; //!< 16-bit UTF-32.
@@ -131,69 +129,29 @@ union ucp_utf32 {
 };
 
 /**
- * @brief Unicode code point structure.
+ * @brief Unicode code point view.
  *
- * Union-based type for representing Unicode code points in
- * various encodings, moving data bits around between them,
- * and for use as by-value function arguments.
+ * Union type for mapping Unicode code points to
+ * various encodings.
  */
 union ucp {
-	uint32_t            u32;     //!< Raw 32-bit data view.
-
-	struct ucp_utf32_7  utf32_0; //!< 7b UTF-32/1B UTF-8 view.
-	struct ucp_utf32_11 utf32_1; //!< 11b UTF-32/2B UTF-8 view.
-	struct ucp_utf32_16 utf32_2; //!< 16b UTF-32/3B UTF-8 view.
-	struct ucp_utf32_21 utf32_3; //!< 21b UTF-32/4B UTF-8 view.
-
-	uint8_t             u8[4];   //!< Raw octets view.
-
-	struct ucp_utf8_1   utf8_0;  //!< 1B UTF-8 view.
-	struct ucp_utf8_2   utf8_1;  //!< 2B UTF-8 view.
-	struct ucp_utf8_3   utf8_2;  //!< 3B UTF-8 view.
-	struct ucp_utf8_4   utf8_3;  //!< 4B UTF-8 view.
-
-	unsigned char       data[4]; //!< Raw bytes view.
-	char                str[4];  //!< Raw characters view.
-};
-/**
- * @brief Unicode code point structure.
- *
- * Union-based type for representing Unicode code points in
- * various encodings, moving data bits around between them,
- * and for use as by-value function arguments.
- */
-union ucp {
-	uint32_t            u32;     //!< Raw 32-bit data view.
-
-	struct ucp_utf32_7  utf32_0; //!< 7b UTF-32/1B UTF-8 view.
-	struct ucp_utf32_11 utf32_1; //!< 11b UTF-32/2B UTF-8 view.
-	struct ucp_utf32_16 utf32_2; //!< 16b UTF-32/3B UTF-8 view.
-	struct ucp_utf32_21 utf32_3; //!< 21b UTF-32/4B UTF-8 view.
-
-	uint8_t             u8[4];   //!< Raw octets view.
-
-	struct ucp_utf8_1   utf8_0;  //!< 1B UTF-8 view.
-	struct ucp_utf8_2   utf8_1;  //!< 2B UTF-8 view.
-	struct ucp_utf8_3   utf8_2;  //!< 3B UTF-8 view.
-	struct ucp_utf8_4   utf8_3;  //!< 4B UTF-8 view.
-
-	unsigned char       data[4]; //!< Raw bytes view.
-	char                str[4];  //!< Raw characters view.
+	unsigned char   d[4];  //!< Data bytes.
+	union ucp_utf8  utf8;  //!< UTF-8 bytes.
+	union ucp_utf32 utf32; //!< UTF-32 value.
 };
 
 _Static_assert(sizeof(union ucp) * CHAR_BIT == 32U,"");
 
 #if clang_at_least_version(19)
-# define BAD_CODE_POINT (const union ucp){.data = {~0U, ~0U, ~0U, ~0U}}
-# define ucp_bad_utf32 (const union ucp){.data = {~0U, ~0U, ~0U, ~0U}}
+# define ucp_bad() ((const union ucp){.d={~0U,~0U,~0U,~0U}})
 #else
-# define BAD_CODE_POINT (constexpr const union ucp){.u32 = UINT32_MAX}
+# define ucp_bad() ((constexpr const union ucp){.d={~0U,~0U,~0U,~0U}})
 #endif
 
 static const_inline struct ucp_utf32_7
 ucp_utf8_1_to_utf32_7 (const struct ucp_utf8_1 c)
 {
-	return (struct ucp_utf32_1){
+	return (struct ucp_utf32_7){
 		.d0_6 = c.d0_6,
 		.p0   = 0
 	};
@@ -254,6 +212,82 @@ ucp_utf8_to_utf32 (const union ucp_utf8 c,
 			.utf32_21 = ucp_utf8_4_to_utf32_21(c.utf8_4)
 		};
 	default:
-		return ucp_bad_utf32;
+		return ucp_bad().utf32;
 	}
 }
+
+static const_inline struct ucp_utf8_1
+ucp_utf32_7_to_utf8_1 (const struct ucp_utf32_7 c)
+{
+	return (struct ucp_utf8_1){
+		.d0_6 = c.d0_6,
+		.p0   = 0
+	};
+}
+
+static const_inline struct ucp_utf8_2
+ucp_utf32_11_to_utf8_2 (const struct ucp_utf32_11 c)
+{
+	return (struct ucp_utf8_2){
+		.d6_10 = c.d6_10,
+		.p0    = 0x6U,
+		.d0_5  = c.d0_5,
+		.p1    = 0x2U
+	};
+}
+
+static const_inline struct ucp_utf8_3
+ucp_utf32_16_to_utf8_3 (const struct ucp_utf32_16 c)
+{
+	return (struct ucp_utf8_3){
+		.d12_15 = c.d12_15,
+		.p0     = 0xeU,
+		.d6_11  = c.d6_11,
+		.p1     = 0x2U,
+		.d0_5   = c.d0_5,
+		.p2     = 0x2U
+	};
+}
+
+static const_inline struct ucp_utf8_4
+ucp_utf32_21_to_utf8_4 (const struct ucp_utf32_21 c)
+{
+	return (struct ucp_utf8_4){
+		.d18_20 = c.d18_20,
+		.p0     = 0x1eU,
+		.d12_17 = c.d12_17,
+		.p1     = 0x2U,
+		.d6_11  = c.d6_11,
+		.p2     = 0x2U,
+		.d0_5   = c.d0_5,
+		.p3     = 0x2U
+	};
+}
+
+static const_inline union ucp_utf8
+ucp_utf32_to_utf8 (const union ucp_utf32 c,
+                   const enum ucp_kind   k)
+{
+	switch (k) {
+	case UCP_UTF32_7:
+		return (union ucp_utf8){
+			.utf8_1 = ucp_utf32_7_to_utf8_1(c.utf32_7)
+		};
+	case UCP_UTF32_11:
+		return (union ucp_utf8){
+			.utf8_2 = ucp_utf32_11_to_utf8_2(c.utf32_11)
+		};
+	case UCP_UTF32_16:
+		return (union ucp_utf8){
+			.utf8_3 = ucp_utf32_16_to_utf8_3(c.utf32_16)
+		};
+	case UCP_UTF32_21:
+		return (union ucp_utf8){
+			.utf8_4 = ucp_utf32_21_to_utf8_4(c.utf32_21)
+		};
+	default:
+		return ucp_bad().utf8;
+	}
+}
+
+#endif /* LIBCANTH_SRC_UCP_H_ */
