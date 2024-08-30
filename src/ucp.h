@@ -7,6 +7,7 @@
 #define LIBCANTH_SRC_UCP_H_
 
 #include <limits.h>
+#include <stdint.h>
 
 #include "util.h"
 
@@ -66,8 +67,8 @@ struct ucp_utf32_21 {
  * @brief Map of 1-byte UTF-8 (ASCII) to UTF-32.
  */
 struct ucp_utf8_1 {
-	uint32_t d0_7   :  7; //!< ASCII byte   [ 0: 6]
-	uint32_t p1     : 25; //!<              [ 7:31]
+	uint32_t d0_6   :  7; //!< ASCII byte   [ 0: 6]
+	uint32_t p0     : 25; //!<              [ 7:31]
 };
 
 /**
@@ -143,9 +144,9 @@ union ucp {
 _Static_assert(sizeof(union ucp) * CHAR_BIT == 32U,"");
 
 #if clang_at_least_version(19)
-# define ucp_bad() ((const union ucp){.d={~0U,~0U,~0U,~0U}})
+# define ucp_bad() ((const union ucp){.d={~0,~0,~0,~0}})
 #else
-# define ucp_bad() ((constexpr const union ucp){.d={~0U,~0U,~0U,~0U}})
+# define ucp_bad() ((constexpr const union ucp){.d={~0,~0,~0,~0}})
 #endif
 
 static const_inline struct ucp_utf32_7
