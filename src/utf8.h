@@ -227,4 +227,9 @@ utf8_expects_leading_byte (struct utf8 const *const u8p)
 	return u8p->state & (utf8_bit(asc) | utf8_bit(cb1) | utf8_bit(ini));
 }
 
+extern char *
+utf8_graph (char              *dst,
+            char const *const  end,
+            int        *const  err);
+
 #endif /* LIBCANTH_SRC_UTF8_H_ */

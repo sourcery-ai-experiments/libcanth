@@ -27,14 +27,6 @@ utf8_st8_name (enum utf8_st8 st8)
 }
 #endif /* !NDEBUG */
 
-#if 0
-constexpr static const uint8_t utf8_range[][4] = {
-	#define F(n,m,l,...) [n] = {__VA_ARGS__},
-	UTF8_PARSER_DESCRIPTOR(F)
-	#undef F
-};
-#endif
-
 #define X1(x)   x
 #define X2(x)   x,x
 #define X3(x)   x,x,x
@@ -135,14 +127,55 @@ constexpr static const uint16_t utf8_dst[16] = {
 	              | utf8_bit(lb4_f4),
 };
 
-#if 0
-static void
-utf8_flowchart (void)
+static char *
+string_copy (char                 *dst,
+             char const *const     end,
+             char const *restrict  src,
+             int        *const     err)
 {
-	char buf[1024] = "digraph {\n";
-	size_t w = sizeof "digraph {";
+	if (!dst)
+		return nullptr;
 
-	for (size_t i = 0; i < sizeof utf8_range / sizeof utf8_range[0]; ++i) {
+	if (dst >= end) {
+		*err = ENOBUFS;
+		return nullptr;
+	}
+
+	size_t sz = (size_t)(end - dst);
+	char *ret = memccpy(dst, src, '\0', sz);
+	if (!ret) {
+		dst[sz - 1] = '\0';
+		*err = E2BIG;
+		return nullptr;
+	}
+
+	return ret - 1;
+}
+
+char *
+utf8_graph (char              *dst,
+            char const *const  end,
+            int        *const  err)
+{
+	constexpr static const uint8_t utf8_range[][4] = {
+		#define F(n,m,l,...) [n] = {__VA_ARGS__},
+		UTF8_PARSER_DESCRIPTOR(F)
+		#undef F
+	};
+
+	if (!err || !dst)
+		return nullptr;
+
+	if (!end) {
+		*err = EFAULT;
+		dst = nullptr;
+	}
+
+	dst = string_copy(dst, end, "digraph {\n", err);
+	if (!dst)
+		return nullptr;
+
+	for (size_t i = 0; i < array_size(utf8_range); ++i) {
 		unsigned a = utf8_range[i][0];
 		unsigned b = utf8_range[i][1];
 		unsigned c = utf8_range[i][2];
@@ -155,63 +188,90 @@ utf8_flowchart (void)
 		if (!(b + d))
 			continue;
 
-		int n = snprintf(&buf[w], sizeof buf - w,
-		                 "\tx%02zx [label=\"[", i);
-		if (n < 1)
-			return;
-		w += (size_t)n;
+		size_t sz = (size_t)(end - dst);
+		int n = __builtin_snprintf(dst, sz,
+		                           "\tx%02zx [label=\"[", i);
+		if (n < 0) {
+			*err = EIO;
+			return nullptr;
+		}
+		if ((size_t)n >= sz) {
+			*err = E2BIG;
+			return nullptr;
+		}
+		dst += n;
+
 		if (b) {
-			n = b == 1
-			    ? snprintf(&buf[w], sizeof buf - w,
-			               "\\\\x%02x", a)
-			    : snprintf(&buf[w], sizeof buf - w,
-			               "\\\\x%02x-\\\\x%02x", a, a + b - 1);
-			if (n < 1)
-				return;
-			w += (size_t)n;
+			size_t sz = (size_t)(end - dst);
+			int n = b == 1
+			    ? __builtin_snprintf(dst, sz,
+			                         "\\\\x%02x", a)
+			    : __builtin_snprintf(dst, sz,
+			                         "\\\\x%02x-\\\\x%02x",
+			                         a, a + b - 1);
+			if (n < 0) {
+				*err = EIO;
+				return nullptr;
+			}
+			if ((size_t)n >= sz) {
+				*err = E2BIG;
+				return nullptr;
+			}
+			dst += n;
 		}
+
 		if (d) {
-			n = d == 1
-			    ? snprintf(&buf[w], sizeof buf - w,
-			               "\\\\x%02x", a + b + c)
-			    : snprintf(&buf[w], sizeof buf - w,
-			               "\\\\x%02x-\\\\x%02x", a + b + c, a + b + c + d - 1);
-			if (n < 1)
-				return;
-			w += (size_t)n;
+			size_t sz = (size_t)(end - dst);
+			int n = d == 1
+			    ? __builtin_snprintf(dst, sz,
+			                         "\\\\x%02x", a + b + c)
+			    : __builtin_snprintf(dst, sz,
+			                         "\\\\x%02x-\\\\x%02x",
+			                         a + b + c, a + b + c + d - 1);
+			if (n < 0) {
+				*err = EIO;
+				return nullptr;
+			}
+			if ((size_t)n >= sz) {
+				*err = E2BIG;
+				return nullptr;
+			}
+			dst += n;
 		}
-		buf[w++] = ']';
-		buf[w++] = '\"';
-		buf[w++] = ']';
-		buf[w++] = ';';
-		buf[w++] = '\n';
+
+		dst = string_copy(dst, end, "]\"];\n", err);
+		if (!dst)
+			return nullptr;
 	}
 
-	for (size_t src = 0;
-	     src < sizeof utf8_dst /
-	           sizeof utf8_dst[0]; ++src) {
-		if (!(utf8_range[src][1] +
-		      utf8_range[src][3]))
+	for (size_t src_idx = 0;
+	     src_idx < array_size(utf8_dst); ++src_idx) {
+		if (!(utf8_range[src_idx][1] +
+		      utf8_range[src_idx][3]))
 			continue;
-		for (unsigned bits = utf8_dst[src],
-		     dst = 0; bits; bits >>= 1U, ++dst) {
+		for (unsigned bits = utf8_dst[src_idx],
+		     dst_idx = 0; bits; bits >>= 1U, ++dst_idx) {
 			if (!(bits & 1U))
 				continue;
-			int n = snprintf(&buf[w], sizeof buf - w,
-			                 "\tx%02zx -> x%02x;\n",
-			                 src, dst);
-			if (n < 1)
-				return;
-			w += (size_t)n;
+
+			size_t sz = (size_t)(end - dst);
+			int n = __builtin_snprintf(dst, sz,
+			                           "\tx%02zx -> x%02x;\n",
+			                           src_idx, dst_idx);
+			if (n < 0) {
+				*err = EIO;
+				return nullptr;
+			}
+			if ((size_t)n >= sz) {
+				*err = E2BIG;
+				return nullptr;
+			}
+			dst += n;
 		}
 	}
 
-	buf[w++] = '}';
-	buf[w++] = '\n';
-	buf[w] = '\0';
-	fputs(buf, stdout);
+	return string_copy(dst, end, "}\n", err);
 }
-#endif
 
 /**
  * @brief Convert a parser state from a bit flag representation
